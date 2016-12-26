@@ -10,6 +10,7 @@ class GraScene(QGraphicsScene):
         self.app = QCoreApplication.instance()
 
     def drawScene(self, graph):
+        self.clear()
         scaleDpi = 101.0 / 72.0  # (true res for 344x193 mm, 1366x768) / 72
         LLx = graph.boundingBox['LLx']
         LLy = graph.boundingBox['LLx']
