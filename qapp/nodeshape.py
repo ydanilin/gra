@@ -35,10 +35,14 @@ class NodeShape(QGraphicsEllipseItem):
         # as having zero reference
         menu = QMenu('Node', event.widget())
         addNode = menu.addAction(event.widget().tr('Add child node here'))
-        delSubt = menu.addAction(event.widget().tr('Delete subtree'))
+        delLeaf = menu.addAction(event.widget().tr('Delete leaf node'))
         menu.popup(event.screenPos())
         addNode.triggered.connect(self.addChildNode)
+        delLeaf.triggered.connect(self.deleteLeafNode)
 
     # handlers
     def addChildNode(self):
         self.scene().app.addChildNode(self.label)
+
+    def deleteLeafNode(self):
+        self.scene().app.deleteLeafNode(self.label)

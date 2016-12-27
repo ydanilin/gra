@@ -11,6 +11,10 @@ class Epygraph:
         self.boundingBox = None
 
     def loadGraph(self, nodes, name='Untitled', directed=True):
+        if self.graphPtr:
+            gps.agraphClose(self.graphPtr)
+        self.nodePtrs = {}
+        self.edgePtrs = {}
         self.graphPtr = gps.agraphNew(name, directed)
         gps.set_shape_nodes(self.graphPtr, 'circle')
         for node in nodes:
@@ -46,6 +50,18 @@ class Epygraph:
         #     print('This is root node')
         self.boundingBox = gps.layout(self.graphPtr)
         # transfer pointer to self
+        if self.graScene:
+            self.graScene.drawScene(self)
+            return 0
+        else:
+            return -1
+
+    def deleteNode(self, label, parent):
+        node = self.nodePtrs.pop(label)
+        edge = self.edgePtrs.pop('{0}-{1}'.format(parent, label))
+        gps.delete_edge(self.graphPtr, edge)
+        gps.delete_node(self.graphPtr, node)
+        self.boundingBox = gps.layout(self.graphPtr)
         if self.graScene:
             self.graScene.drawScene(self)
             return 0

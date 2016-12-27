@@ -14,4 +14,10 @@ class QApp(QApplication):
         self.dbms.loadGraph(name)
 
     def addChildNode(self, parentLabel):
-        self.dbms.addChildNode(parentLabel)
+        # will take this parameter somewhere in the settings
+        reGraph = False
+        self.dbms.addChildNode(parentLabel, forceReGraph=reGraph)
+
+    def deleteLeafNode(self, label):
+        reGraph = False
+        self.dbms.deleteLeafNode(label, forceReGraph=reGraph)

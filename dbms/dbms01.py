@@ -26,17 +26,22 @@ class DBMS:
         self.metadata.create_all(self.engine)
         self.lastLabel = 0
 
-    def loadGraph(self, name):
+    def listDataTable(self):
         res = self.connection.execute(select([self.t_data.c.node,
                                               self.t_data.c.parent]
                                              ).order_by(self.t_data.c.node)
                                       )
+
         nodes = [l for l in res]
         self.lastLabel = nodes[-1][0]
+        return nodes
+
+    def loadGraph(self, name):
+        nodes = self.listDataTable()
         self.gviz.loadGraph(nodes, name)
         return 0
 
-    def addChildNode(self, parentLabel, child=None):
+    def addChildNode(self, parentLabel, child=None, forceReGraph=False):
         self.lastLabel += 1
         addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
         subset = select([self.lastLabel, parentLabel]).union(
@@ -46,5 +51,26 @@ class DBMS:
             ['node', 'ancestor'], subset)
         self.connection.execute(addToData)
         self.connection.execute(addToPath)
-        self.gviz.addNode(self.lastLabel, parentLabel)
+        # if forceReGraph=False then call addNode
+        # else call loadGraph
+        if not forceReGraph:
+            self.gviz.addNode(self.lastLabel, parentLabel)
+        else:
+            nodes = self.listDataTable()
+            self.gviz.loadGraph(nodes, 'redrawn')
+        return 0
+
+    def deleteLeafNode(self, label, forceReGraph=False):
+        parent = self.connection.execute(
+            select([self.t_data.c.parent]).where(self.t_data.c.node == label)
+        ).first()[0]
+        delFromData = self.t_data.delete().where(self.t_data.c.node == label)
+        delFromPath = self.t_path.delete().where(self.t_path.c.node == label)
+        self.connection.execute(delFromData)
+        self.connection.execute(delFromPath)
+        if not forceReGraph:
+            self.gviz.deleteNode(label, parent)
+        else:
+            nodes = self.listDataTable()
+            self.gviz.loadGraph(nodes, 'redrawn')
         return 0

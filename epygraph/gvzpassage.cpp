@@ -201,6 +201,7 @@ static PyObject *delete_node(PyObject *self, PyObject *args) {
     if (!(node = retrieve_node(node_ptr))) {
         return NULL;
     }
+    gvFreeLayout(gvc, ag);
     result = agdelete(ag, node);
     return Py_BuildValue("i", result);
 }
@@ -219,6 +220,7 @@ static PyObject *delete_edge(PyObject *self, PyObject *args) {
     if (!(edge = retrieve_edge(edge_ptr))) {
         return NULL;
     }
+    gvFreeLayout(gvc, ag);
     result = agdelete(ag, edge);
     return Py_BuildValue("i", result);
 }
@@ -271,6 +273,7 @@ static PyObject *wrap_agclose(PyObject *self, PyObject *args) {
     }
     if (!(ag = retrieve_graph(gra_ptr)))
         return NULL;
+    gvFreeLayout(gvc, ag);
     agclose(ag);
     Py_RETURN_NONE;
 }
