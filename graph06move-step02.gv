@@ -1,12 +1,12 @@
 strict graph G {
     node [shape=circle height=0.1 margin=0.01];
   edge [len=0.25];
-    1 -- 2;
-    2 -- 3;
-    2 -- 4;
-    2 -- 5;
     1 -- 6;
     6 -- 7;
-    6 -- 8; //[style=dotted];
+    7 -- 2;
+    6 -- 8;
     6 -- 9;
+    2 -- 3 [style=dotted];
+    2 -- 4 [style=dotted];
+    2 -- 5 [style=dotted];
 }
