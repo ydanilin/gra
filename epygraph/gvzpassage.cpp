@@ -14,7 +14,7 @@
 #include "graphviz/gvc.h"
 #include "graphviz/types.h"
 
-//#define PY3
+#define PY3
 #define MODULE_NAME "gvzpassage"
 #define MODULEINIT_PY3(NAME) PyInit_ ## NAME(void)
 #define MODULEINIT_PY2(NAME) init ## NAME(void)

@@ -2,6 +2,7 @@
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QObject
 from .mainwindow01 import MainWindow
+from .gramodel import GraModel
 
 
 class QApp(QApplication):
@@ -11,6 +12,11 @@ class QApp(QApplication):
         self.mainwindow = MainWindow()
 
     def drawGraph(self, name='untitled'):
+        self.mainwindow.dataView.setModel(GraModel(self.dbms.listDataTable))
+        self.mainwindow.dataView.resizeColumnsToContents()
+        self.mainwindow.dataView.resizeRowsToContents()
+        self.mainwindow.dataView.verticalHeader().setDefaultSectionSize(
+                                        self.mainwindow.dataView.rowHeight(0))
         self.dbms.loadGraph(name)
 
     def addChildNode(self, parentLabel):
