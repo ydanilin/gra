@@ -5,8 +5,7 @@ from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
 
 
 class DBMS:
-    def __init__(self, gviz=None):
-        self.gviz = gviz
+    def __init__(self):
         ownPath = os.path.dirname(os.path.abspath(__file__))
         dbPath = os.path.join(ownPath, 'ierarch01.db')
         self.engine = create_engine('sqlite:///' + dbPath)
@@ -31,15 +30,9 @@ class DBMS:
                                               self.t_data.c.parent]
                                              ).order_by(self.t_data.c.node)
                                       )
-
-        nodes = [l for l in res]
-        self.lastLabel = nodes[-1][0]
+        nodes = [{'node': l[0], 'parent': l[1]} for l in res]
+        self.lastLabel = nodes[-1]['node']
         return nodes
-
-    def loadGraph(self, name):
-        nodes = self.listDataTable()
-        self.gviz.loadGraph(nodes, name)
-        return 0
 
     def addChildNode(self, parentLabel, child=None, forceReGraph=False):
         self.lastLabel += 1

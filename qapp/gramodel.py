@@ -4,21 +4,20 @@ from PyQt5.QtCore import QAbstractTableModel
 
 
 class GraModel(QAbstractTableModel):
-    def __init__(self, tableDataProc):
+    def __init__(self, dataProc, dimProc):
         super(GraModel, self).__init__()
-        self.table = tableDataProc()
-        self.rows = len(self.table)
-        self.columns = len(self.table[0])
+        self.dataProc = dataProc
+        self.dimProc = dimProc
 
     def rowCount(self, parent):
-        return self.rows
+        return self.dimProc(1)
 
     def columnCount(self, parent):
-        return self.columns
+        return self.dimProc(2)
 
     def data(self, index, role):
         if role == Qt.DisplayRole:
-            return self.table[index.row()][index.column()]
+            return self.dataProc(index.row(), index.column())
         if role == Qt.TextAlignmentRole:
             return Qt.AlignCenter
 

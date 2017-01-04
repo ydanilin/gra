@@ -3,58 +3,53 @@ import epygraph.gvzpassage as gps
 
 
 class Epygraph:
-    def __init__(self, graScene=None):
-        self.graScene = graScene
+    def __init__(self):
+        self.name = 'Untitled'
+        self.directed = True
+        self.nodesDefaultShape = 'circle'
         self.graphPtr = None
         self.nodePtrs = {}
-        self.edgePtrs = {}
-        self.boundingBox = None
 
-    def loadGraph(self, nodes, name='Untitled', directed=True):
+    def newGraph(self, nodes):
         if self.graphPtr:
             gps.agraphClose(self.graphPtr)
         self.nodePtrs = {}
-        self.edgePtrs = {}
-        self.graphPtr = gps.agraphNew(name, directed)
-        gps.set_shape_nodes(self.graphPtr, 'circle')
+        self.graphPtr = gps.agraphNew(self.name, self.directed)
+        gps.set_shape_nodes(self.graphPtr, self.nodesDefaultShape)
         for node in nodes:
-            label = node[0]
-            parent = node[1]
-            # create node
-            self.nodePtrs[label] = gps.addNode(self.graphPtr, str(label))
-            # create edge
-            if parent != label:
-                key = '{0}-{1}'.format(parent, label)
-                self.edgePtrs[key] = gps.addEdge(self.graphPtr,
-                                                 self.nodePtrs[parent],
-                                                 self.nodePtrs[label])
-            # else:
-            #     print('This is root node')
-        self.boundingBox = gps.layout(self.graphPtr)
-        # transfer pointer to self
-        if self.graScene:
-            self.graScene.drawScene(self)
-            return 0
-        else:
-            return -1
+            label = node['node']
+            parent = node['parent']
+            self.nodePtrs[label] = self.addNode(label, parent)
 
     def addNode(self, label, parent):
-        self.nodePtrs[label] = gps.addNode(self.graphPtr, str(label))
-        # create edge
+        nodePtr = gps.addNode(self.graphPtr, str(label))
+        # since each node has one and only one edge TO PARENT,
+        # each node record of nodePtrs dict (keys = labels) represents a pair
+        # (nodePtr, edgePtr), where edgePtr points to edge to parent
+        # if it is a root node, edgePtr will be None
         if parent != label:
-            key = '{0}-{1}'.format(parent, label)
-            self.edgePtrs[key] = gps.addEdge(self.graphPtr,
-                                             self.nodePtrs[parent],
-                                             self.nodePtrs[label])
-        # else:
-        #     print('This is root node')
-        self.boundingBox = gps.layout(self.graphPtr)
-        # transfer pointer to self
-        if self.graScene:
-            self.graScene.drawScene(self)
-            return 0
+            parentPtr = self.nodePtrs[parent][0]
+            edgePtr = gps.addEdge(self.graphPtr, parentPtr, nodePtr)
         else:
-            return -1
+            edgePtr = None
+        return nodePtr, edgePtr
+
+    def makeLayout(self):
+        return gps.layout(self.graphPtr)
+
+    def getGeometry(self, nodes):
+        for node in nodes:
+            label = node['node']
+            if label in self.nodePtrs:
+                nodePtr = self.nodePtrs[label][0]
+                edgePtr = self.nodePtrs[label][1]
+                node['geometry'] = gps.node_geometry(nodePtr)
+                if edgePtr:
+                    node['edgeGeometry'] = gps.edge_geometry(edgePtr)
+                else:
+                    node['edgeGeometry'] = None
+        gps.clearContext(self.graphPtr)
+
 
     def deleteNode(self, label, parent):
         node = self.nodePtrs.pop(label)

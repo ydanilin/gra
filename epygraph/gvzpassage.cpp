@@ -4,7 +4,8 @@
  * 2. Extension procedure is slightly different for Py2 and Py3 so uncomment
  *    #define PY3 for use with Py3
  * 3. Call gvFreeLayout() BEFORE GRAPH MODIFICATIONS (add, delete nodes/edges)
- *    otherwise the module crashes
+ *    otherwise the module crashes - BETTER to call immediately after
+ *    geometry retrieval
  ******************************************************************************/
 
 #include <stdio.h>     // for printf
@@ -70,7 +71,6 @@ static PyObject *wrap_addNode(PyObject *self, PyObject *args) {
     if (!(ag = retrieve_graph(gra_ptr))) {
         return NULL;
     }
-    gvFreeLayout(gvc, ag);
     node = agnode(ag, label, 1);
     return PyCapsule_New(node, "Agnode", NULL);
 }
@@ -201,7 +201,6 @@ static PyObject *delete_node(PyObject *self, PyObject *args) {
     if (!(node = retrieve_node(node_ptr))) {
         return NULL;
     }
-    gvFreeLayout(gvc, ag);
     result = agdelete(ag, node);
     return Py_BuildValue("i", result);
 }
@@ -220,7 +219,6 @@ static PyObject *delete_edge(PyObject *self, PyObject *args) {
     if (!(edge = retrieve_edge(edge_ptr))) {
         return NULL;
     }
-    gvFreeLayout(gvc, ag);
     result = agdelete(ag, edge);
     return Py_BuildValue("i", result);
 }
@@ -273,8 +271,19 @@ static PyObject *wrap_agclose(PyObject *self, PyObject *args) {
     }
     if (!(ag = retrieve_graph(gra_ptr)))
         return NULL;
-    gvFreeLayout(gvc, ag);
     agclose(ag);
+    Py_RETURN_NONE;
+}
+
+static PyObject *wrap_clearcontext(PyObject *self, PyObject *args) {
+    PyObject* gra_ptr;
+    Agraph_t* ag;
+    if (!PyArg_ParseTuple(args, "O", &gra_ptr)) {
+        return NULL;
+    }
+    if (!(ag = retrieve_graph(gra_ptr)))
+        return NULL;
+    gvFreeLayout(gvc, ag);
     Py_RETURN_NONE;
 }
 
@@ -292,6 +301,7 @@ static PyMethodDef module_methods[] = {
     {"set_shape_nodes", wrap_nodeshape, METH_VARARGS, "Sets a default shape for nodes"},
     {"node_label", wrap_nodelabel, METH_VARARGS, "Gets node label"},
     {"agraphClose", wrap_agclose, METH_VARARGS, "Closes the graph"},
+    {"clearContext", wrap_clearcontext, METH_VARARGS, "Clear GVC context"},
     {NULL, NULL, 0, NULL}
 };
 

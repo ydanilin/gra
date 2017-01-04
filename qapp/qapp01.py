@@ -6,18 +6,21 @@ from .gramodel import GraModel
 
 
 class QApp(QApplication):
-    def __init__(self, argv):
+    def __init__(self, argv, frontend):
         super(QApp, self).__init__(argv)
-        self.dbms = None
+        self.frontEnd = frontend
+        self.initGraphEvent()
         self.mainwindow = MainWindow()
 
-    def drawGraph(self, name='untitled'):
-        self.mainwindow.dataView.setModel(GraModel(self.dbms.listDataTable))
-        self.mainwindow.dataView.resizeColumnsToContents()
-        self.mainwindow.dataView.resizeRowsToContents()
-        self.mainwindow.dataView.verticalHeader().setDefaultSectionSize(
-                                        self.mainwindow.dataView.rowHeight(0))
-        self.dbms.loadGraph(name)
+    def initGraphEvent(self):
+        # self.frontEnd.setRedrawState(state)
+        # self.frontEnd.setGraphName(name)
+        # self.frontEnd.setDirected(directed)
+        # self.frontEnd.setNodesDefaultShape('circle')
+        self.frontEnd.loadGraph()
+
+    def sceneWidgetData(self):
+        return self.frontEnd.graph, self.frontEnd.boundingBox
 
     def addChildNode(self, parentLabel):
         # will take this parameter somewhere in the settings
@@ -27,3 +30,9 @@ class QApp(QApplication):
     def deleteLeafNode(self, label):
         reGraph = False
         self.dbms.deleteLeafNode(label, forceReGraph=reGraph)
+
+    def t_dataWidgetData(self, row, column):
+        return self.frontEnd.t_dataData(row, column)
+
+    def t_dataDimension(self, whichDimension):
+        return self.frontEnd.t_dataDimension(whichDimension)
