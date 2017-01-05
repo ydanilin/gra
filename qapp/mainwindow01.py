@@ -57,3 +57,7 @@ class TDataTableGrid(QTableView):
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
         self.verticalHeader().setDefaultSectionSize(self.rowHeight(0))
+        self.app.modelChanged.connect(self.update)
+
+    def update(self):
+        self.model().layoutChanged.emit()

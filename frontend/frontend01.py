@@ -32,6 +32,20 @@ class FrontEnd:
         self.boundingBox = self.gviz.makeLayout()
         self.gviz.getGeometry(self.graph)
 
+    def addChildNode(self, parent):
+        # DB operations
+        self.dbms.addChildNode(parent)
+        self.graph = self.dbms.listDataTable()
+        self.nodesCount = len(self.graph)
+        # Gviz operations
+        if self.redrawState:
+            self.gviz.newGraph(self.graph)
+            self.boundingBox = self.gviz.makeLayout()
+            self.gviz.getGeometry(self.graph)
+        else:
+            print('not implemented')
+
+    # datafeeds for widgets
     def t_dataData(self, row, column):
         # TODO seems should be datagrid based on list of dictionaries...
         col = 'node'

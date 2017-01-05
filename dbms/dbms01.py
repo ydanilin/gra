@@ -34,7 +34,7 @@ class DBMS:
         self.lastLabel = nodes[-1]['node']
         return nodes
 
-    def addChildNode(self, parentLabel, child=None, forceReGraph=False):
+    def addChildNode(self, parentLabel, child=None):
         self.lastLabel += 1
         addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
         subset = select([self.lastLabel, parentLabel]).union(
@@ -44,14 +44,6 @@ class DBMS:
             ['node', 'ancestor'], subset)
         self.connection.execute(addToData)
         self.connection.execute(addToPath)
-        # if forceReGraph=False then call addNode
-        # else call loadGraph
-        if not forceReGraph:
-            self.gviz.addNode(self.lastLabel, parentLabel)
-        else:
-            nodes = self.listDataTable()
-            self.gviz.loadGraph(nodes, 'redrawn')
-        return 0
 
     def deleteLeafNode(self, label, forceReGraph=False):
         parent = self.connection.execute(
