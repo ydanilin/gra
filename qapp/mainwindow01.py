@@ -30,7 +30,7 @@ class MainWindow(QMainWindow):
         self.dataView = TDataTableGrid(self.app)
         eastLayout.addWidget(self.dataView)
         # t_path table grid
-        self.pathView = QTableView()
+        self.pathView = TPathTableGrid(self.app)
         eastLayout.addWidget(self.pathView)
 
 
@@ -52,6 +52,22 @@ class TDataTableGrid(QTableView):
         self.app = app
         super(TDataTableGrid, self).__init__(parent)
         model = GraModel(self.app.t_dataWidgetData, self.app.t_dataDimension)
+        self.setModel(model)
+        self.verticalHeader().hide()
+        self.resizeColumnsToContents()
+        self.resizeRowsToContents()
+        self.verticalHeader().setDefaultSectionSize(self.rowHeight(0))
+        self.app.modelChanged.connect(self.update)
+
+    def update(self):
+        self.model().layoutChanged.emit()
+
+
+class TPathTableGrid(QTableView):
+    def __init__(self, app, parent=None):
+        self.app = app
+        super(TPathTableGrid, self).__init__(parent)
+        model = GraModel(self.app.t_pathWidgetData, self.app.t_pathDimension)
         self.setModel(model)
         self.verticalHeader().hide()
         self.resizeColumnsToContents()

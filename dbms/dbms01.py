@@ -1,14 +1,15 @@
 # coding=utf-8
-import os
 from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
                         UniqueConstraint, select)
 
 
 class DBMS:
-    def __init__(self):
-        ownPath = os.path.dirname(os.path.abspath(__file__))
-        dbPath = os.path.join(ownPath, 'ierarch01.db')
-        self.engine = create_engine('sqlite:///' + dbPath)
+    def __init__(self, database=None):
+        if database:
+            address = 'sqlite:///' + database
+        else:
+            address = 'sqlite://'
+        self.engine = create_engine(address)
         self.connection = self.engine.connect()
         self.metadata = MetaData()
 
@@ -34,18 +35,31 @@ class DBMS:
         self.lastLabel = nodes[-1]['node']
         return nodes
 
-    def addChildNode(self, parentLabel, child=None):
-        self.lastLabel += 1
-        addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
-        subset = select([self.lastLabel, parentLabel]).union(
-            select([self.lastLabel, self.t_path.c.ancestor]).where(
-                self.t_path.c.node == parentLabel))
-        addToPath = self.t_path.insert().from_select(
-            ['node', 'ancestor'], subset)
-        self.connection.execute(addToData)
-        self.connection.execute(addToPath)
+    def listPathTable(self):
+        res = self.connection.execute(select([self.t_path.c.node,
+                                              self.t_path.c.ancestor])
+                                      )
+        path = [l for l in res]
+        return path
 
-    def deleteLeafNode(self, label, forceReGraph=False):
+    def addChildNode(self, parent, child=None):
+        """supply parent = None to add root label"""
+        self.lastLabel += 1
+        if parent:
+            parentLabel = parent
+        else:
+            parentLabel = self.lastLabel  # this means we're adding root node
+        addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
+        self.connection.execute(addToData)
+        if parent:
+            subset = select([self.lastLabel, parentLabel]).union(
+                select([self.lastLabel, self.t_path.c.ancestor]).where(
+                    self.t_path.c.node == parentLabel))
+            addToPath = self.t_path.insert().from_select(
+                ['node', 'ancestor'], subset)
+            self.connection.execute(addToPath)
+
+    def deleteLeafNode(self, label):
         parent = self.connection.execute(
             select([self.t_data.c.parent]).where(self.t_data.c.node == label)
         ).first()[0]
@@ -53,9 +67,4 @@ class DBMS:
         delFromPath = self.t_path.delete().where(self.t_path.c.node == label)
         self.connection.execute(delFromData)
         self.connection.execute(delFromPath)
-        if not forceReGraph:
-            self.gviz.deleteNode(label, parent)
-        else:
-            nodes = self.listDataTable()
-            self.gviz.loadGraph(nodes, 'redrawn')
-        return 0
+        return parent

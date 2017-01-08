@@ -28,9 +28,14 @@ class QApp(QApplication):
         # emit model changed
         self.modelChanged.emit()
 
-    def deleteLeafNode(self, label):
-        reGraph = False
-        self.dbms.deleteLeafNode(label, forceReGraph=reGraph)
+    def deleteLeafNodeEvent(self, label):
+        self.frontEnd.deleteLeafNode(label)
+        # emit model changed
+        self.modelChanged.emit()
+
+    # service functions for context menu events
+    def hasChildren(self, label):
+        return self.frontEnd.hasChildren(label)
 
     # datafeeds for widgets
     def sceneWidgetData(self):
@@ -41,3 +46,9 @@ class QApp(QApplication):
 
     def t_dataDimension(self, whichDimension):
         return self.frontEnd.t_dataDimension(whichDimension)
+
+    def t_pathWidgetData(self, row, column):
+        return self.frontEnd.t_pathData(row, column)
+
+    def t_pathDimension(self, whichDimension):
+        return self.frontEnd.t_pathDimension(whichDimension)

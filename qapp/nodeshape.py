@@ -33,12 +33,14 @@ class NodeShape(QGraphicsEllipseItem):
         # if use asynchronous call, ALWAYS pass a parent - event.widget()
         # to menu constructor, otherwise the menu will be destroyed immediately
         # as having zero reference
-        menu = QMenu('Node', event.widget())
-        addNode = menu.addAction(event.widget().tr('Add child node here'))
-        delLeaf = menu.addAction(event.widget().tr('Delete leaf node'))
-        menu.popup(event.screenPos())
+        callerWidget = event.widget()
+        menu = QMenu('Node', callerWidget)
+        addNode = menu.addAction(callerWidget.tr('Add child node here'))
         addNode.triggered.connect(self.addChildNode)
-        delLeaf.triggered.connect(self.deleteLeafNode)
+        if not callerWidget.parent().app.hasChildren(self.label):
+            delLeaf = menu.addAction(callerWidget.tr('Delete leaf node'))
+            delLeaf.triggered.connect(self.deleteLeafNode)
+        menu.popup(event.screenPos())
 
     # handlers
     def addChildNode(self):
@@ -47,4 +49,6 @@ class NodeShape(QGraphicsEllipseItem):
         self.scene().drawScene(app.sceneWidgetData())
 
     def deleteLeafNode(self):
-        self.scene().app.deleteLeafNode(self.label)
+        app = self.scene().views()[0].app
+        app.deleteLeafNodeEvent(self.label)
+        self.scene().drawScene(app.sceneWidgetData())
