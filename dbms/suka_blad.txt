@@ -1,0 +1,13 @@
+INSERT INTO t_path (node, ancestor) SELECT node, ancestor 
+FROM (SELECT 1 AS sortir, 2 AS node, 7 AS ancestor UNION SELECT 2, 2, ancestor 
+FROM (SELECT t_path.ancestor AS ancestor 
+FROM t_path 
+WHERE t_path.node = :node_1 ORDER BY t_path.id_) UNION SELECT 3, node, 7 
+FROM (SELECT t_path.node AS node 
+FROM t_path 
+WHERE t_path.ancestor = :ancestor_1) UNION SELECT 4, node, ancestor 
+FROM (SELECT t_path.node AS node 
+FROM t_path 
+WHERE t_path.ancestor = :ancestor_1), (SELECT t_path.ancestor AS ancestor 
+FROM t_path 
+WHERE t_path.node = :node_1 ORDER BY t_path.id_) ORDER BY sortir)

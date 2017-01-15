@@ -1,9 +1,13 @@
 # coding=utf-8
+from pprint import pprint
+from sqlalchemy.sql import text
 from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
                         UniqueConstraint, select, update, and_, or_, column,
                         literal_column, union)
 
 
+# inspector = inspect(engine)
+# inspector.get_columns('book')
 class DBMS:
     def __init__(self, database=None):
         if database:
@@ -19,6 +23,7 @@ class DBMS:
                             Column('parent', Integer(), nullable=False)
                             )
         self.t_path = Table('t_path', self.metadata,
+                            Column('id_', Integer(), primary_key=True),
                             Column('node', Integer()),
                             Column('ancestor', Integer()),
                             UniqueConstraint('node', 'ancestor',
@@ -39,7 +44,8 @@ class DBMS:
 
     def listPathTable(self):
         res = self.connection.execute(select([self.t_path.c.node,
-                                              self.t_path.c.ancestor])
+                                              self.t_path.c.ancestor]).order_by
+                                                            (self.t_path.c.id_)
                                       )
         path = [l for l in res]
         return path
@@ -54,9 +60,15 @@ class DBMS:
         addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
         self.connection.execute(addToData)
         if parent:
-            subset = select([self.lastLabel, parentLabel]).union(
-                select([self.lastLabel, self.t_path.c.ancestor]).where(
-                    self.t_path.c.node == parentLabel))
+            subset = select([column('node'), column('ancestor')]).select_from\
+                (
+                union(select([literal_column('1').label('sortir'),
+                              literal_column(str(self.lastLabel)).label('node'),
+                              literal_column(str(parent)).label('ancestor')]),
+                      select([2, self.lastLabel, self.t_path.c.ancestor]).where
+                          (self.t_path.c.node == parentLabel)
+                      ).order_by('sortir')
+                 )
             addToPath = self.t_path.insert().from_select(
                 ['node', 'ancestor'], subset)
             self.connection.execute(addToPath)
@@ -94,15 +106,35 @@ class DBMS:
         # insertion
         subtree = select([self.t_path.c.node]).where(self.t_path.c.ancestor == label)
         path = select([self.t_path.c.ancestor]).where(self.t_path.c.node == label)
-        path_y = select([self.t_path.c.ancestor]).where(self.t_path.c.node == moveTo)
-        subset = select([column('node'), column('ancestor')]).select_from(
+        path_y = select([self.t_path.c.ancestor]).where\
+            (self.t_path.c.node == moveTo).order_by(self.t_path.c.id_)
+
+        res = self.connection.execute(text("""
+        SELECT * FROM t_path"""))
+        lst = [l for l in res]
+        pprint(lst)
+        print(moveTo)
+        res = self.connection.execute(text("""
+            SELECT * FROM t_path WHERE node = 7"""))
+        lst = [l for l in res]
+        pprint(lst)
+        print(str(path_y))
+        res = self.connection.execute(path_y)
+        lst = [l for l in res]
+        pprint(lst)
+
+
+        subset = select([column('node'), column('ancestor')]).select_from\
+            (
             union(select([literal_column('1').label('sortir'),
                           literal_column(str(label)).label('node'),
                           literal_column(str(moveTo)).label('ancestor')]),
-                  select([2, label, path_y]),
-                  select([3, subtree, moveTo]),
-                  select([4, subtree, path_y])).order_by('sortir')
+                          select([2, label, path_y]),
+                          select([3, subtree, moveTo]),
+                          select([4, subtree, path_y])
+                  ).order_by('sortir')
             )
         addToPath = self.t_path.insert().from_select(
             ['node', 'ancestor'], subset)
+        print(str(addToPath))
         self.connection.execute(addToPath)
