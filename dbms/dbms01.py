@@ -107,7 +107,7 @@ class DBMS:
         subtree = select([self.t_path.c.node]).where(self.t_path.c.ancestor == label)
         path = select([self.t_path.c.ancestor]).where(self.t_path.c.node == label)
         path_y = select([self.t_path.c.ancestor]).where\
-            (self.t_path.c.node == moveTo).order_by(self.t_path.c.id_)
+            (self.t_path.c.node == moveTo).order_by(self.t_path.c.id_.asc())
 
         res = self.connection.execute(text("""
         SELECT * FROM t_path"""))
@@ -128,13 +128,58 @@ class DBMS:
             (
             union(select([literal_column('1').label('sortir'),
                           literal_column(str(label)).label('node'),
-                          literal_column(str(moveTo)).label('ancestor')]),
-                          select([2, label, path_y]),
-                          select([3, subtree, moveTo]),
-                          select([4, subtree, path_y])
+                          literal_column(str(moveTo)).label('ancestor')]
+                         ),
+                  select([2, label, path_y]),
+                  select([3, subtree, moveTo]),
+                  select([4, subtree, path_y])
                   ).order_by('sortir')
             )
         addToPath = self.t_path.insert().from_select(
             ['node', 'ancestor'], subset)
         print(str(addToPath))
         self.connection.execute(addToPath)
+
+    def moveSubtree1(self, label, moveTo):
+        # update t_data
+        upd = update(self.t_data).where(self.t_data.c.node == label).values(
+            parent=moveTo)
+        self.connection.execute(upd)
+
+        # update t_path
+        subtree = select([self.t_path.c.node]).where(
+            self.t_path.c.ancestor == label)
+        path = select([self.t_path.c.ancestor]).where(
+            self.t_path.c.node == label)
+
+        # deletion
+        cond = and_(or_(self.t_path.c.node == label,
+                        self.t_path.c.node.in_(subtree)),
+                    self.t_path.c.ancestor.in_(path)
+                    )
+        delet = self.t_path.delete().where(cond)
+        self.connection.execute(delet)
+
+        # insertion
+        subtree = select([self.t_path.c.node]).where(
+            self.t_path.c.ancestor == label)
+        path = select([self.t_path.c.ancestor]).where(
+            self.t_path.c.node == label)
+        path_y = select([self.t_path.c.ancestor]).where \
+            (self.t_path.c.node == moveTo).order_by(self.t_path.c.id_.asc())
+        addToPath = text("""
+            INSERT INTO t_path (node, ancestor)
+            SELECT node, ancestor FROM (
+            SELECT 1 AS sortir, :label AS node, :moveTo AS ancestor, 0 as ku
+            UNION
+            SELECT 2, :label, ancestor, id_ FROM t_path
+                                             WHERE node = :moveTo
+            UNION
+            SELECT 3, node, :moveTo, id_ FROM t_path
+                                          WHERE ancestor = :label
+            UNION
+            SELECT 4, a.node, b.ancestor, 0 as ku FROM t_path a, (SELECT node, ancestor FROM t_path WHERE node = :moveTo order by id_) b
+                                           WHERE a.ancestor = :label
+            ORDER BY sortir, ku)""")
+        self.connection.execute(addToPath, {'label': label, 'moveTo': moveTo})
+

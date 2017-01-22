@@ -1,13 +1,33 @@
-INSERT INTO t_path (node, ancestor) SELECT node, ancestor 
-FROM (SELECT 1 AS sortir, 2 AS node, 7 AS ancestor UNION SELECT 2, 2, ancestor 
-FROM (SELECT t_path.ancestor AS ancestor 
-FROM t_path 
-WHERE t_path.node = :node_1 ORDER BY t_path.id_) UNION SELECT 3, node, 7 
-FROM (SELECT t_path.node AS node 
-FROM t_path 
-WHERE t_path.ancestor = :ancestor_1) UNION SELECT 4, node, ancestor 
-FROM (SELECT t_path.node AS node 
-FROM t_path 
-WHERE t_path.ancestor = :ancestor_1), (SELECT t_path.ancestor AS ancestor 
-FROM t_path 
-WHERE t_path.node = :node_1 ORDER BY t_path.id_) ORDER BY sortir)
+INSERT INTO t_path (node, ancestor)
+    SELECT node, ancestor FROM (SELECT 1 AS sortir, 2 AS node, 7 AS ancestor
+				UNION
+				SELECT 2, 2, ancestor FROM (SELECT t_path.ancestor AS ancestor FROM t_path 
+							    WHERE t_path.node = :node_1 ORDER BY t_path.id_ ASC)
+                                UNION
+                                SELECT 3, node, 7 FROM (SELECT t_path.node AS node FROM t_path 
+	                                                WHERE t_path.ancestor = :ancestor_1)
+                                UNION
+                                SELECT 4, node, ancestor FROM (SELECT t_path.node AS node FROM t_path 
+	                                                       WHERE t_path.ancestor = :ancestor_1),
+                                                              (SELECT t_path.ancestor AS ancestor FROM t_path 
+	                                                       WHERE t_path.node = :node_1 ORDER BY t_path.id_ ASC)
+                                ORDER BY sortir)
+
+
+
+
+            INSERT INTO t_path (node, ancestor)
+            SELECT node, ancestor FROM (
+            SELECT 1 AS sortir, :label AS node, :moveTo AS ancestor
+            UNION
+            SELECT 2, :label, ancestor FROM (SELECT t_path.ancestor AS ancestor FROM t_path
+                                             WHERE t_path.node = :moveTo ORDER BY t_path.id_ DESC)
+            UNION
+            SELECT 3, node, :moveTo FROM (SELECT t_path.node AS node FROM t_path
+                                          WHERE t_path.ancestor = :label)
+            UNION
+            SELECT 4, node, ancestor FROM (SELECT t_path.node AS node FROM t_path
+                                           WHERE t_path.ancestor = :label),
+                                          (SELECT t_path.ancestor AS ancestor FROM t_path
+                                           WHERE t_path.node = :moveTo ORDER BY t_path.id_ DESC)
+            ORDER BY sortir)""")
