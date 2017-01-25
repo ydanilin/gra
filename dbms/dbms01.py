@@ -39,7 +39,6 @@ class DBMS:
                                              ).order_by(self.t_data.c.node)
                                       )
         nodes = [{'node': l[0], 'parent': l[1]} for l in res]
-        # self.lastLabel = nodes[-1]['node']
         return nodes
 
     def listPathTable(self):
@@ -53,21 +52,28 @@ class DBMS:
     def addChildNode(self, parent, child=None):
         """supply parent = None to add root label"""
         self.lastLabel += 1
+
+        # add to t_data
         if parent:
             parentLabel = parent
         else:
             parentLabel = self.lastLabel  # this means we're adding root node
         addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
         self.connection.execute(addToData)
+
+        # add to t_path
         if parent:
+            sort_val1 = literal_column('1').label('sort_group')
+            sort_val2 = literal_column('2').label('sort_group')
+            x = literal_column(str(self.lastLabel)).label('node')
+            y = literal_column(str(parent)).label('ancestor')
+            path_parent = select([self.t_path.c.ancestor]).where\
+                                 (self.t_path.c.node == parentLabel)
             subset = select([column('node'), column('ancestor')]).select_from\
                 (
-                union(select([literal_column('1').label('sortir'),
-                              literal_column(str(self.lastLabel)).label('node'),
-                              literal_column(str(parent)).label('ancestor')]),
-                      select([2, self.lastLabel, self.t_path.c.ancestor]).where
-                          (self.t_path.c.node == parentLabel)
-                      ).order_by('sortir')
+                union(select([sort_val1, x, y]),
+                      select([sort_val2, x, path_parent])
+                      ).order_by('sort_group')
                  )
             addToPath = self.t_path.insert().from_select(
                 ['node', 'ancestor'], subset)
@@ -107,33 +113,18 @@ class DBMS:
         subtree = select([self.t_path.c.node]).where(self.t_path.c.ancestor == label)
         path = select([self.t_path.c.ancestor]).where(self.t_path.c.node == label)
         path_y = select([self.t_path.c.ancestor]).where\
-            (self.t_path.c.node == moveTo).order_by(self.t_path.c.id_.asc())
-
-        res = self.connection.execute(text("""
-        SELECT * FROM t_path"""))
-        lst = [l for l in res]
-        pprint(lst)
-        print(moveTo)
-        res = self.connection.execute(text("""
-            SELECT * FROM t_path WHERE node = 7"""))
-        lst = [l for l in res]
-        pprint(lst)
-        print(str(path_y))
-        res = self.connection.execute(path_y)
-        lst = [l for l in res]
-        pprint(lst)
-
+            (self.t_path.c.node == moveTo)
 
         subset = select([column('node'), column('ancestor')]).select_from\
             (
-            union(select([literal_column('1').label('sortir'),
+            union(select([literal_column('1').label('sort_group'),
                           literal_column(str(label)).label('node'),
                           literal_column(str(moveTo)).label('ancestor')]
                          ),
                   select([2, label, path_y]),
                   select([3, subtree, moveTo]),
                   select([4, subtree, path_y])
-                  ).order_by('sortir')
+                  ).order_by('sort_group')
             )
         addToPath = self.t_path.insert().from_select(
             ['node', 'ancestor'], subset)
@@ -170,16 +161,19 @@ class DBMS:
         addToPath = text("""
             INSERT INTO t_path (node, ancestor)
             SELECT node, ancestor FROM (
-            SELECT 1 AS sortir, :label AS node, :moveTo AS ancestor, 0 as ku
+            SELECT 1 AS sort_group, :label AS node, :moveTo AS ancestor, 0 as sort_node, 0 as sort_anc
             UNION
-            SELECT 2, :label, ancestor, id_ FROM t_path
+            SELECT 2, :label, ancestor, 0, id_ FROM t_path
                                              WHERE node = :moveTo
             UNION
-            SELECT 3, node, :moveTo, id_ FROM t_path
+            SELECT 3, node, :moveTo, id_, 0 FROM t_path
                                           WHERE ancestor = :label
             UNION
-            SELECT 4, a.node, b.ancestor, 0 as ku FROM t_path a, (SELECT node, ancestor FROM t_path WHERE node = :moveTo order by id_) b
-                                           WHERE a.ancestor = :label
-            ORDER BY sortir, ku)""")
+            SELECT 4, a.node, b.ancestor, a.id_, b.id_ FROM t_path a, t_path b
+                                           WHERE a.ancestor = :label AND b.node = :moveTo
+            ORDER BY sort_group, sort_node, sort_anc)""")
         self.connection.execute(addToPath, {'label': label, 'moveTo': moveTo})
 
+# TODO: try to implement math names (x, y)
+# TODO: sorting in add_node
+# TODO: rewrite insertion based on this
