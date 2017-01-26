@@ -51,29 +51,36 @@ class DBMS:
 
     def addChildNode(self, parent, child=None):
         """supply parent = None to add root label"""
+        # internal names
+        # x - new node label; y - parent to attach to
         self.lastLabel += 1
-
+        x = self.lastLabel
         # add to t_data
         if parent:
-            parentLabel = parent
+            y = parent
         else:
-            parentLabel = self.lastLabel  # this means we're adding root node
-        addToData = self.t_data.insert().values((self.lastLabel, parentLabel))
+            y = x  # this means we're adding root node
+        addToData = self.t_data.insert().values((x, y))
         self.connection.execute(addToData)
 
         # add to t_path
         if parent:
-            sort_val1 = literal_column('1').label('sort_group')
-            sort_val2 = literal_column('2').label('sort_group')
-            x = literal_column(str(self.lastLabel)).label('node')
-            y = literal_column(str(parent)).label('ancestor')
-            path_parent = select([self.t_path.c.ancestor]).where\
-                                 (self.t_path.c.node == parentLabel)
+            gr1 = literal_column('1').label('sort_group')
+            gr2 = literal_column('2').label('sort_group')
+            vs0 = literal_column('0').label('sort_value')
+
+            X = literal_column(str(x)).label('node')
+            Y = literal_column(str(y)).label('ancestor')
+
+            path_parent = select([self.t_path.c.ancestor,
+                                  self.t_path.c.id_]).where\
+                                 (self.t_path.c.node == y)
+
             subset = select([column('node'), column('ancestor')]).select_from\
                 (
-                union(select([sort_val1, x, y]),
-                      select([sort_val2, x, path_parent])
-                      ).order_by('sort_group')
+                union(select([gr1, X, Y, vs0]),
+                      select([gr2, X, path_parent])
+                      ).order_by('sort_group', 'sort_value')
                  )
             addToPath = self.t_path.insert().from_select(
                 ['node', 'ancestor'], subset)
@@ -92,39 +99,48 @@ class DBMS:
         return parent
 
     def moveSubtree(self, label, moveTo):
+        x = label
+        y = moveTo
         # update t_data
-        upd = update(self.t_data).where(self.t_data.c.node == label).values(
-            parent=moveTo)
+        upd = update(self.t_data).where(self.t_data.c.node == x).values(
+            parent=y)
         self.connection.execute(upd)
 
+        node = self.t_path.c.node
+        ancestor = self.t_path.c.ancestor
+        id_ = self.t_path.c.id_
+
         # update t_path
-        subtree = select([self.t_path.c.node]).where(self.t_path.c.ancestor == label)
-        path = select([self.t_path.c.ancestor]).where(self.t_path.c.node == label)
+        subtree = select([node]).where(ancestor == x)
+        path = select([ancestor]).where(node == x)
 
         # deletion
-        cond = and_(or_(self.t_path.c.node == label,
-                        self.t_path.c.node.in_(subtree)),
-                    self.t_path.c.ancestor.in_(path)
+        cond = and_(or_(node == x,
+                        node.in_(subtree)),
+                    ancestor.in_(path)
                     )
         delet = self.t_path.delete().where(cond)
         self.connection.execute(delet)
 
         # insertion
-        subtree = select([self.t_path.c.node]).where(self.t_path.c.ancestor == label)
-        path = select([self.t_path.c.ancestor]).where(self.t_path.c.node == label)
-        path_y = select([self.t_path.c.ancestor]).where\
-            (self.t_path.c.node == moveTo)
+        subtree = select([node, id_]).where(ancestor == x)
+        path_y = select([ancestor, id_]).where(node == y)
 
+        gs1 = literal_column('1').label('sort_group')
+        gs2 = literal_column('2').label('sort_group')
+        gs3 = literal_column('3').label('sort_group')
+        gs4 = literal_column('4').label('sort_group')
+        sn0 = literal_column('0').label('sort_node')
+        sa0 = literal_column('0').label('sort_ancestor')
+        X = literal_column(str(x)).label('node')
+        Y = literal_column(str(y)).label('ancestor')
         subset = select([column('node'), column('ancestor')]).select_from\
             (
-            union(select([literal_column('1').label('sort_group'),
-                          literal_column(str(label)).label('node'),
-                          literal_column(str(moveTo)).label('ancestor')]
-                         ),
-                  select([2, label, path_y]),
-                  select([3, subtree, moveTo]),
-                  select([4, subtree, path_y])
-                  ).order_by('sort_group')
+            union(select([gs1, X, sn0, Y, sa0]),
+                  select([gs2, X, sn0, path_y]),
+                  select([gs3, subtree, Y, sa0]),
+                  select([gs4, subtree, path_y])
+                  ).order_by('sort_group', 'sort_node', 'sort_ancestor')
             )
         addToPath = self.t_path.insert().from_select(
             ['node', 'ancestor'], subset)

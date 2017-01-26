@@ -196,7 +196,7 @@ class DBMS_Test03(unittest.TestCase):
         # t_pathRes = self.dbms.listPathTable()
         # pprint(t_pathRes)
 
-        self.dbms.moveSubtree1(2, 7)
+        self.dbms.moveSubtree(2, 7)
         t_dataRes = self.dbms.listDataTable()
         t_pathRes = self.dbms.listPathTable()
 
