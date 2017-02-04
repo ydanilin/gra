@@ -49,7 +49,8 @@ class DBMS:
         path = [l for l in res]
         return path
 
-    def addChildNode(self, parent, child=None):
+    # Public interface functions
+    def addNode(self, parent):
         """supply parent = None to add root label"""
         # internal names
         # x - new node label; y - parent to attach to
@@ -60,11 +61,47 @@ class DBMS:
             y = parent
         else:
             y = x  # this means we're adding root node
+        self.addChildNode(x, y)
+        return x
+
+    def deleteNode(self, node):
+        if node == self.lastLabel:
+            self.lastLabel -= 1
+        self.deleteLeafNode(node)
+
+    def moveNode(self, node, moveTo):
+        self.deleteLeafNode(node)
+        self.addChildNode(node, moveTo)
+
+    def insertNode(self, insertBefore):
+        y = self.retrieveParent(insertBefore)
+        x = self.addNode(y)
+        self.moveSubtree1(insertBefore, x)
+
+    def removeNode(self, node):
+        y = self.retrieveParent(node)
+        self.deleteNode(node)
+        upd = update(self.t_data).where(self.t_data.c.parent == node).values(
+            parent=y)
+        self.connection.execute(upd)
+
+    def deleteSubtree(self, node):
+        ancestor = self.t_path.c.ancestor
+        subtree = select([self.t_path.c.node]).where(ancestor == node)
+        delet = self.t_path.delete().where(self.t_path.c.node.in_(subtree))
+        self.connection.execute(delet)
+        self.deleteNode(node)
+        delFromData = self.t_data.delete().where(self.t_data.c.parent == node)
+        self.connection.execute(delFromData)
+
+
+    # Internal functions
+    def addChildNode(self, x, y):
+        """supply parent = None to add root label"""
         addToData = self.t_data.insert().values((x, y))
         self.connection.execute(addToData)
-
         # add to t_path
-        if parent:
+        if y != x:
             gr1 = literal_column('1').label('sort_group')
             gr2 = literal_column('2').label('sort_group')
             vs0 = literal_column('0').label('sort_value')
@@ -87,15 +124,14 @@ class DBMS:
             self.connection.execute(addToPath)
 
     def deleteLeafNode(self, label):
-        parent = self.connection.execute(
-            select([self.t_data.c.parent]).where(self.t_data.c.node == label)
-        ).first()[0]
+        parent = self.retrieveParent(label)
         delFromData = self.t_data.delete().where(self.t_data.c.node == label)
-        delFromPath = self.t_path.delete().where(self.t_path.c.node == label)
+        delFromPath = self.t_path.delete().where(or_(
+                                                self.t_path.c.node == label,
+                                                self.t_path.c.ancestor == label)
+                                                )
         self.connection.execute(delFromData)
         self.connection.execute(delFromPath)
-        if label == self.lastLabel:
-            self.lastLabel -= 1
         return parent
 
     def moveSubtree(self, label, moveTo):
@@ -164,6 +200,15 @@ class DBMS:
                         self.t_path.c.node.in_(subtree)),
                     self.t_path.c.ancestor.in_(path)
                     )
+        # x = label
+        # node = self.t_path.c.node
+        # ancestor = self.t_path.c.ancestor
+        # clause1 = and_(or_(node == x, node.in_(subtree)),
+        #                ancestor.in_(path)
+        #                )
+        #
+        # clause2 = and_(node.in_(subtree), ancestor == x)
+        # cond = or_(clause1, clause2)
         delet = self.t_path.delete().where(cond)
         self.connection.execute(delet)
 
@@ -193,3 +238,9 @@ class DBMS:
 # TODO: try to implement math names (x, y)
 # TODO: sorting in add_node
 # TODO: rewrite insertion based on this
+
+    def retrieveParent(self, node):
+        parent = self.connection.execute(
+            select([self.t_data.c.parent]).where(self.t_data.c.node == node)
+        ).first()[0]
+        return parent
