@@ -49,6 +49,7 @@ class DBMS:
         path = [l for l in res]
         return path
 
+    # **********************************
     # Public interface functions
     def addNode(self, parent):
         """supply parent = None to add root label"""
@@ -61,42 +62,36 @@ class DBMS:
             y = parent
         else:
             y = x  # this means we're adding root node
-        self.addChildNode(x, y)
+        self.addLeafNode(x, y)
         return x
 
     def deleteNode(self, node):
-        if node == self.lastLabel:
-            self.lastLabel -= 1
         self.deleteLeafNode(node)
 
     def moveNode(self, node, moveTo):
         self.deleteLeafNode(node)
-        self.addChildNode(node, moveTo)
+        self.addLeafNode(node, moveTo)
 
     def insertNode(self, insertBefore):
         y = self.retrieveParent(insertBefore)
-        x = self.addNode(y)
+        self.lastLabel += 1
+        x = self.lastLabel
+        self.addLeafNode(x, y)
         self.moveSubtree1(insertBefore, x)
+        return x
 
     def removeNode(self, node):
         y = self.retrieveParent(node)
-        self.deleteNode(node)
-        upd = update(self.t_data).where(self.t_data.c.parent == node).values(
-            parent=y)
-        self.connection.execute(upd)
+        self.deleteLeafNode(node)
+        self.branchUpSubtree(node, y)
 
     def deleteSubtree(self, node):
-        ancestor = self.t_path.c.ancestor
-        subtree = select([self.t_path.c.node]).where(ancestor == node)
-        delet = self.t_path.delete().where(self.t_path.c.node.in_(subtree))
-        self.connection.execute(delet)
-        self.deleteNode(node)
-        delFromData = self.t_data.delete().where(self.t_data.c.parent == node)
-        self.connection.execute(delFromData)
+        self.deleteLeafNode(node)
+        self.wipeOffSubtree(node)
 
-
+    # ***********************************
     # Internal functions
-    def addChildNode(self, x, y):
+    def addLeafNode(self, x, y):
         """supply parent = None to add root label"""
         addToData = self.t_data.insert().values((x, y))
         self.connection.execute(addToData)
@@ -123,16 +118,31 @@ class DBMS:
                 ['node', 'ancestor'], subset)
             self.connection.execute(addToPath)
 
-    def deleteLeafNode(self, label):
-        parent = self.retrieveParent(label)
-        delFromData = self.t_data.delete().where(self.t_data.c.node == label)
-        delFromPath = self.t_path.delete().where(or_(
-                                                self.t_path.c.node == label,
-                                                self.t_path.c.ancestor == label)
-                                                )
+    def deleteLeafNode(self, x):
+        if x == self.lastLabel:
+            self.lastLabel -= 1
+        delFromData = self.t_data.delete().where(self.t_data.c.node == x)
+        delFromPath = self.t_path.delete().where(
+            self.t_path.c.node == x)
         self.connection.execute(delFromData)
         self.connection.execute(delFromPath)
-        return parent
+
+    def branchUpSubtree(self, x, y):
+        """x = nodeToDelete, y = newParent"""
+        updData = update(self.t_data).where(
+            self.t_data.c.parent == x).values(parent=y)
+        delFromPath = self.t_path.delete().where(self.t_path.c.ancestor == x)
+        self.connection.execute(updData)
+        self.connection.execute(delFromPath)
+
+    def wipeOffSubtree(self, x):
+        node = self.t_path.c.node
+        ancestor = self.t_path.c.ancestor
+        subtree = select([node]).where(ancestor == x)
+        delFromPath = self.t_path.delete().where(node.in_(subtree))
+        delFromData = self.t_data.delete().where(self.t_data.c.parent == x)
+        self.connection.execute(delFromPath)
+        self.connection.execute(delFromData)
 
     def moveSubtree(self, label, moveTo):
         x = label

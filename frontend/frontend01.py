@@ -38,7 +38,7 @@ class FrontEnd:
 
     def addChildNode(self, parent):
         # DB operations
-        self.dbms.addChildNode(parent)
+        self.dbms.addLeafNode(parent)
         self.graph = self.dbms.listDataTable()
         self.nodesCount = len(self.graph)
         self.tPath = self.dbms.listPathTable()
