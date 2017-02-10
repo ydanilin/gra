@@ -25,9 +25,9 @@ class DBMS:
         self.t_path = Table('t_path', self.metadata,
                             Column('id_', Integer(), primary_key=True),
                             Column('node', Integer()),
-                            Column('ancestor', Integer()),
-                            UniqueConstraint('node', 'ancestor',
-                                             name='path_entry')
+                            Column('ancestor', Integer())#,
+                            # UniqueConstraint('node', 'ancestor',
+                            #                  name='path_entry')
                             )
         self.metadata.create_all(self.engine)
         self.lastLabel = 0
