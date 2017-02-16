@@ -1,0 +1,278 @@
+// SSL - Simple Sample Language
+//
+// Words..
+
+// Processing instructions
+caseInsensitive();
+
+delimiters(<DELIMITER>);
+
+lex(<TOKENS>);
+
+parse(<language>);
+
+// Lexer rules
+<TOKENS>								::= <WHITESPACE> |
+											<COMMENT> |
+											token(<NUMBER>) |
+											token("\"") token(<STRING_BODY>) token("\"") |
+											token(keywords()) |
+											token(<IDENTIFIER>);
+
+<WHITESPACE>							::= " " | "\r" | "\n" | "\t";
+
+<COMMENT>								::= <LINECOMMENT> | 
+											<BLOCKCOMMENT>;
+
+<LINECOMMENT>							::= "//" skip("\n") "\n" |
+											"//" skipEof();
+
+<BLOCKCOMMENT>							::= "/*" skip("*/") "*/";
+
+<NUMBER>								::= <FLOAT_NUMBER> |
+											<INT_NUMBER>;
+
+<FLOAT_NUMBER>							::= "0".."9"+ "." ["0".."9"+] [("e" | "E") ["+" | "-"] "0".."9"+] |
+											"." "0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+] |
+											"0".."9"+ ("e" | "E") ["+" | "-"] "0".."9"+ |
+											"0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+];
+
+<INT_NUMBER>							::= <HEX_NUMBER> |
+											<DEC_NUMBER>;
+
+
+<HEX_NUMBER>							::= "0x" ("0".."9" | "a".."f")+;
+
+<DEC_NUMBER>							::= "0".."9"+;
+
+<STRING_BODY>							::= skip("\"", "\\\"" | "\\\\");
+
+<IDENTIFIER>							::= ("a".."z" | "_") ("a".."z" | "0".."9" | "_")*;
+
+<DELIMITER>								::= " " | "\n" | "\r" | "\t" |
+											"~" | "`"  | "!"  | "@"  |
+											"#" | "$"  | "%"  | "^"  |
+											"&" | "*"  | "("  | ")"  | 
+											"-" | "+"  | "="  | "{"  | 
+											"[" | "}"  | "]"  | ";"  | 
+											":" | "\\" | "\"" | "\'" | 
+											"," | "<"  | ">"  | "/"  | 
+											"?" | "|"  | ".";
+
+// Language rules
+<language>								::= <fileScope>*;
+
+<fileScope>								::= <packageDeclaration> |
+											<classDeclaration> |
+											<interfaceDeclaration>;
+
+// Generic name rules
+<simpleName>							::= <IDENTIFIER>;
+
+<qualifiedName>							::= <IDENTIFIER> ("." <IDENTIFIER>)*;
+
+// Generic type name rules
+<typeName>								::= <qualifiedName> [<templateSpec>];
+
+<templateSpec>							::= "<" <typeName> ">";
+
+
+// Packages
+<packageDeclaration>					::= node("PACKAGE", "package" <packageName> "{" <packageBody> "}");
+
+<packageName>							::= attribute("NAME", <simpleName>);
+
+<packageBody>							::= <packageScope>*;
+
+<packageScope>							::= <packageDeclaration> |
+											<classDeclaration> |
+											<interfaceDeclaration>;
+
+// Classes
+<classDeclaration>						::= node("CLASS", node("DECLARATION", <classVisibility> "class" <className> [<classInherits>]) node("BODY", "{" <classBody> "}"));
+
+<classVisibility>						::= attribute("SCOPE", "public") |
+											attribute("SCOPE", "protected") |
+											attribute("SCOPE", "private") |
+											attributeEx("SCOPE", "public");
+
+<className>								::= attribute("NAME", <simpleName>);
+
+<classInherits>							::= ":" attribute("PARENT", <qualifiedName>) ("," attribute("PARENT", <qualifiedName>))*;
+
+<classBody>								::= <classScope>*;
+
+<classScope>							::= <constructorDeclaration> |
+											<destructorDeclaration> |
+											<attributeDeclaration> |
+											<operationDeclaration>;
+
+// Interfaces
+<interfaceDeclaration>					::= node("INTERFACE", <interfaceVisibility> node("DECLARATION", "interface" <interfaceName> [<interfaceInherits>]) node("BODY", "{" <interfaceBody> "}"));
+
+<interfaceVisibility>					::= attribute("SCOPE", "public") |
+											attribute("SCOPE", "protected") |
+											attribute("SCOPE", "private") |
+											attributeEx("SCOPE", "public");
+
+<interfaceName>							::= <simpleName>;
+
+<interfaceInherits>						::= ":" <qualifiedName> ("," <qualifiedName>)*;
+
+<interfaceBody>							::= <interfaceScope>*;
+
+<interfaceScope>						::= <operationDeclaration>;
+
+// Constructors
+<constructorDeclaration>				::= node("METHOD", attributeEx("SCOPE", "public") attribute("NAME", <simpleName>) "(" [<parameterList>] ")" [<constructorBody>] ";");
+
+<constructorBody>						::= "{" <statement>* "}";
+
+// Destructors
+<destructorDeclaration>					::= node("METHOD", attributeEx("SCOPE", "public") attribute("NAME", "~" <simpleName>) "(" ")" [<destructorBody>] ";");
+
+<destructorBody>						::= "{" <statement>* "}";
+
+// Attributes
+<attributeDeclaration>					::= node("FIELD", [<attributeVisibility>] node("TYPE", <attributeType>) node("DECLARATOR", <attributeName>) [<attributeDefault>] ";");
+
+<attributeVisibility>					::= attribute("SCOPE", "public") |
+											attribute("SCOPE", "protected") |
+											attribute("SCOPE", "private") |
+											attributeEx("SCOPE", "public");
+
+<attributeType>							::= attribute("TYPE", <typeName>);
+
+<attributeName>							::= attribute("NAME", <simpleName>);
+
+<attributeDefault>						::= node("DEFAULT", "=" attribute("VALUE", <constantExpression>));
+
+// Operations
+<operationDeclaration>					::= node("METHOD", node("DECLARATION", <operationVisibility> <operationType> <operationName> <operationParameters>) [<operationBody>] ";");
+
+<operationVisibility>					::= attribute("SCOPE", "public") |
+											attribute("SCOPE", "protected") |
+											attribute("SCOPE", "private") |
+											attributeEx("SCOPE", "public");
+
+<operationType>							::= attribute("TYPE", <typeName>);
+
+<operationName>							::= attribute("NAME", <simpleName>);
+
+<operationParameters>					::= "(" [<parameterList>] ")";
+
+<parameterList>							::= <parameter> ("," <parameter>)*;
+
+<parameter>								::= node("PARAMETER", <parameterType> <parameterName>);
+
+<parameterType>							::= attribute("TYPE", <typeName>);
+
+<parameterName>							::= attribute("NAME", <simpleName>);
+
+<operationBody>							::= "{" <statement>* "}";
+
+// Statements
+<statement>								::= <variableDeclarationStatement> |
+											<assignmentExpression>  ";"|
+											<methodAccess> ";";
+
+<variableDeclarationStatement>			::= <variableType> <variableName> [<variableDefault>] ";";
+
+<variableType>							::= <qualifiedName>;
+
+<variableName>							::= <simpleName>;
+
+<variableDefault>						::= "=" <constantExpression>;
+
+// Expressions
+<assignmentExpression>					::= preProcess(<primaryExpression>,
+												<?> "=" <constantExpression> |
+												<?> "+=" <constantExpression> |
+												<?> "-=" <constantExpression>
+											);
+
+<constantExpression>					::= <conditionalExpression>;
+
+<conditionalExpression>					::= preProcess(<logicalOrExpression>,
+												<?> "?" <conditionalExpression> ":" <conditionalExpression> |
+												<?>
+											);
+
+<logicalOrExpression>					::= preProcess(<logicalAndExpression>,
+												<?> "||" <logicalOrExpression> |
+												<?>
+											);
+
+<logicalAndExpression>					::= preProcess(<inclusiveOrExpression>,
+												<?> "&&" <logicalAndExpression> |
+												<?>
+											);
+
+<inclusiveOrExpression>					::= preProcess(<exclusiveOrExpression>,
+												<?> "|" <inclusiveOrExpression> |
+												<?>
+											);
+
+<exclusiveOrExpression>					::= preProcess(<andExpression>,
+												<?> "^" <exclusiveOrExpression> |
+												<?>
+											);
+
+<andExpression>							::= preProcess(<equalityExpression>,
+												<?> "&" <andExpression> |
+												<?>
+											);
+
+<equalityExpression>					::= preProcess(<relationalExpression>,
+												<?> "==" <equalityExpression> |
+												<?> "!=" <equalityExpression> |
+												<?>
+											);
+
+<relationalExpression>					::= preProcess(<shiftExpression>,
+												<?> "<" <relationalExpression> |
+												<?> ">" <relationalExpression> |
+												<?> "<=" <relationalExpression> |
+												<?> ">=" <relationalExpression> |
+												<?>
+											);
+
+<shiftExpression>						::= preProcess(<additiveExpression>,
+												<?> "<<" <shiftExpression> |
+												<?> ">>" <shiftExpression> |
+												<?>
+											);
+
+<additiveExpression>					::= preProcess(<multiplicativeExpression>,
+												<?> "+" <additiveExpression> |
+												<?> "-" <additiveExpression> |
+												<?>
+											);
+
+<multiplicativeExpression>				::= preProcess(<primaryExpression>,
+												<?> "*" <multiplicativeExpression> |
+												<?> "/" <multiplicativeExpression> |
+												<?> "%" <multiplicativeExpression> |
+												<?>
+											);
+
+<primaryExpression>						::= <literal> |
+											<methodAccess> |
+											<variableAccess> |
+											"(" <constantExpression> ")";
+
+<methodAccess>							::= <qualifiedName> "(" [<argumentList>] ")";
+
+<argumentList>							::= <argument> ("," <argument>)*;
+
+<argument>								::= <constantExpression>;
+
+<variableAccess>						::= <qualifiedName>;
+
+// Literals
+<literal>								::= <numericLiteral> |
+											<stringLiteral>;
+
+<numericLiteral>						::= <NUMBER>;
+
+<stringLiteral>							::= "\"" <STRING_BODY> "\"";
