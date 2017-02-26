@@ -1,78 +1,102 @@
 // Grammar for Python
-
 // Adapted to EA from here:
 // https://docs.python.org/3.6/reference/grammar.html
 
-caseInsensitive();
+caseSensitive();
 delimiters(<DELIMITER>);
+//tabSize(8);
 lex(<TOKENS>);
-parse(<language>);
-
+parse(<proceed>);
 
 
 // Tokens:
-<TOKENS>								::= <WHITESPACE> |
-											<COMMENT> |
+<DELIMITER>				::= "\n" | "\r" | "\t" |  " " |
+						"~"  | "`"  | "!"  |  "@" |
+						"#"  | "$"  | "%"  |  "^" |
+						"&"  | "*"  | "("  | ")"  |
+						"-"  | "+"  | "="  | "{"  |
+						"["  | "}"  | "]"  | ";"  |
+						":"  | "\\" | "\'" | "\"" |
+						","  | "<"  | ">"  | "/"  |
+						"?"  | "|"  | ".";
+
+<WHITESPACE>			::= " " | "\t";
+<NEWLINE>			::= "\r\n" | "\r" | "\n";
+//<ENDMARKER>		::= skipEof();
+
+<COMMENT>			::= "#" skip("\r\n" | "\n");
+
+<STRING>			::= [<STRING_PREFIX>] <STRING_BODY>;
+<STRING_PREFIX>			::= "r" | "u" | "ur" | "R" | "U" | "UR" | "Ur" | "uR";
+<STRING_BODY>			::= "'''" skip("'''") "'''" | 
+					"'" skip("'", "\\\'" | "\\\\") "'" |
+					"\"\"\"" skip("\"\"\"") "\"\"\"" |
+					"\"" skip("\"", "\\\"" | "\\\\") "\"";
+
+<NAME>			::= ("a".."z" | "A".."Z" | "_") ("a".."z" | "0".."9" | "A".."Z" | "_")*;
+
+<NUMBER>			::= <FLOAT_NUMBER> |
+					<HEX_NUMBER> |
+					<OCT_NUMBER> |
+					<DEC_NUMBER>;
+<HEX_NUMBER>		::= "0" ("x" | "X") ("0".."9" | "a".."f" | "A".."F")+ ["l" | "L"];
+<OCT_NUMBER>			::= "0" "0".."7"+ ["l" | "L"];
+<DEC_NUMBER>			::= "0".."9"+ ["l" | "L"];
+<FLOAT_NUMBER>	::= "0".."9"+ "." ["0".."9"+] [("e" | "E") ["+" | "-"] "0".."9"+] ["j" | "J"] |
+		"." "0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+] ["j" | "J"] |
+		"0".."9"+ ("e" | "E") ["+" | "-"] "0".."9"+ ["j" | "J"] |
+		"0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+] ("j" | "J");
+
+// new from Python 3.6
+<ASYNC>			::= "async";
+<AWAIT>			::= "await";
+
+
+<TOKENS>								::= token(<WHITESPACE>) |
+											token(<COMMENT>) |
+											token(<NEWLINE>) |
 											token(<NUMBER>) |
-											token("\"") token(<STRING>) token("\"") |
+											token(<STRING>) |
 											token(keywords()) |
 											token(<NAME>);
 
-<WHITESPACE>							::= " " | "\r" | "\n" | "\t";
-
-<COMMENT>								::= <LINECOMMENT> | 
-											<BLOCKCOMMENT>;
-
-<LINECOMMENT>							::= "#" skip("\n") "\n" |
-											"#" skipEof();
-
-<BLOCKCOMMENT>							::= "\"\"\"" skip("\"\"\"") "\"\"\"";
-
-<DELIMITER>								::= " " | "\n" | "\r" | "\t" |
-											"~" | "`"  | "!"  | "@"  |
-											"#" | "$"  | "%"  | "^"  |
-											"&" | "*"  | "("  | ")"  | 
-											"-" | "+"  | "="  | "{"  | 
-											"[" | "}"  | "]"  | ";"  | 
-											":" | "\\" | "\"" | "\'" | 
-											"," | "<"  | ">"  | "/"  | 
-											"?" | "|"  | ".";
-
-// from Python
-<NEWLINE>		::= ["\r"]"\n";
-<ENDMARKER>		::= skipEof();
-<ASYNC>			::= "async";
-<NAME>			::= ("a".."z" | "A".."Z" | "_") ("a".."z" | "0".."9" | "A".."Z" | "_")*;
-<NUMBER>								::= <FLOAT_NUMBER> |
-											<INT_NUMBER>;
-<FLOAT_NUMBER>							::= "0".."9"+ "." ["0".."9"+] [("e" | "E") ["+" | "-"] "0".."9"+] |
-											"." "0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+] |
-											"0".."9"+ ("e" | "E") ["+" | "-"] "0".."9"+ |
-											"0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+];
-<INT_NUMBER>							::= <HEX_NUMBER> |
-											<DEC_NUMBER>;
-<HEX_NUMBER>							::= "0x" ("0".."9" | "a".."f")+;
-<DEC_NUMBER>							::= "0".."9"+;
-// To be revised
-<STRING>								::= skip("\"", "\\\"" | "\\\\");
-<INDENTT>								::= "    ";
-<DEDENTT>								::= "";
-<AWAIT>									::= "await";
-
-
 // Rules
-<language>			::= (<single_input>)*;
+//<language>			::= node("FILE", <file_input>);
+<proceed>           ::= <language>;
+<language>			::= (<file_input>)*;
 
-<single_input>		::= <NEWLINE> | <simple_stmt> | <compound_stmt> <NEWLINE>;
-<file_input>		::= (<NEWLINE> | <stmt>)* <ENDMARKER>;
-<eval_input>		::= <testlist> (<NEWLINE>)* <ENDMARKER>;
+//<single_input>		::= <NEWLINE> | <simple_stmt> | <compound_stmt> <NEWLINE>;
+//<file_input>		::= (<NEWLINE> | <stmt>)* <ENDMARKER>;
+<file_input>		::= (<SC>* <NEWLINE> | <stmt>);
+//<eval_input>		::= <testlist> (<NEWLINE>)* <ENDMARKER>;
+
+<S>				::= <WHITESPACE>;
+<SC>			::= <WHITESPACE> | 
+					<COMMENT>;
+					
+<suite>			::= <simple_stmt> | <NEWLINE> indent() <stmt> (level() <stmt>)* dedent();
+
+<classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
+                                                      attribute("NAME", <NAME>)
+													  ["(" [<arglist>] ")"] ":" <SC>*
+									  )
+								  node("BODY", <suite>)
+					    );
+
+<funcdef>		::= node("METHOD", node("DECLARATION", "def" <S>+
+                                        attribute("NAME", <NAME>)
+								        <parameters> ["->" <test>] ":"
+								       )
+								   <suite>
+						);
+
+<arglist>		::= <argument> ("," <argument>)*  [","];
 
 <decorator>			::= "@" <dotted_name> [ "(" [<arglist>] ")" ] <NEWLINE>;
 <decorators>		::= (<decorator>)+;
 <decorated>			::= <decorators> (<classdef> | <funcdef> | <async_funcdef>);
 
 <async_funcdef>		::= <ASYNC> <funcdef>;
-<funcdef>				::= "def" <NAME> <parameters> ["->" <test>] ":" <suite>;
 
 <parameters>		::= "(" [<typedargslist>] ")";
 <typedargslist>		::= (<tfpdef> ["=" <test>] ("," <tfpdef> ["=" <test>])* ["," [
@@ -80,7 +104,9 @@ parse(<language>);
       | "**" <tfpdef> [","]]]
   | "*" [<tfpdef>] ("," <tfpdef> ["=" <test>])* ["," ["**" <tfpdef> [","]]]
   | "**" <tfpdef> [","]);
-<tfpdef>			::= <NAME> [":" <test>];
+  
+<tfpdef>			::= node("PARAMETER", attribute("NAME", <NAME>) [":" attribute("TYPE", <test>)]);
+
 <varargslist>		::= (<vfpdef> ["=" <test>] ("," <vfpdef> ["=" <test>])* ["," [
         "*" [<vfpdef>] ("," <vfpdef> ["=" <test>])* ["," ["**" <vfpdef> [","]]]
       | "**" <vfpdef> [","]]]
@@ -89,12 +115,12 @@ parse(<language>);
 );
 <vfpdef>			::= <NAME>;
 
-<stmt>				::= <simple_stmt> | <compound_stmt>;
+<stmt>				::= <S>* <COMMENT> <NEWLINE> | <simple_stmt> | <compound_stmt>;
 <simple_stmt>		::= <small_stmt> (";" <small_stmt>)* [";"] <NEWLINE>;
 <small_stmt>		::= (<expr_stmt> | <del_stmt> | <pass_stmt> | <flow_stmt> |
              <import_stmt> | <global_stmt> | <nonlocal_stmt> | <assert_stmt>);
-<expr_stmt>			::= <testlist_star_expr> (<annassign> | <augassign> (<yield_expr> | <testlist>) |
-                     ("=" (<yield_expr> | <testlist_star_expr>))*);
+<expr_stmt>			::= <testlist_star_expr> <S>* (<annassign> | <augassign> (<yield_expr> | <testlist>) |
+                     ("=" <S>* (<yield_expr> | <testlist_star_expr>))*);
 <annassign>			::= ":" <test> ["=" <test>];
 <testlist_star_expr>		::= (<test> | <star_expr>) ("," (<test>|<star_expr>))* [","];
 <augassign>			::= ("+=" | "-=" | "*=" | "@=" | "/=" | "%=" | "&=" | "|=" | "^=" |
@@ -136,7 +162,7 @@ parse(<language>);
 <with_item>			::= <test> ["as" <expr>];
 // NB compile.c makes sure that the default except clause is last
 <except_clause>		::= "except" [<test> ["as" <NAME>]];
-<suite>				::= <simple_stmt> | <NEWLINE> <INDENTT> (<stmt>)+ <DEDENTT>;
+
 
 <test>				::= <or_test> ["if" <or_test> "else" <test>] | <lambdef>;
 <test_nocond>		::= <or_test> | <lambdef_nocond>;
@@ -175,9 +201,7 @@ parse(<language>);
                   ((<test> | <star_expr>)
                    (<comp_for> | ("," (<test> | <star_expr>))* [","])) );
 
-<classdef>		::= "class" <NAME> ["(" [<arglist>] ")"] ":" <suite>;
 
-<arglist>		::= <argument> ("," <argument>)*  [","];
 
 // The reason that keywords are test nodes instead of NAME is that using NAME
 // results in an ambiguity. ast.c makes sure it"s a NAME.

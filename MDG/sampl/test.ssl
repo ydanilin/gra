@@ -1,0 +1,36 @@
+// Test.SSL
+
+package Sparx {
+	package EA {
+		public interface Foo
+		{
+			int bar();
+		}
+		
+		public class Element : Sparx.PersistedObject, Sparx.DrawnObject {
+			Element()
+			{
+				options = 0.01;
+				connectionString = "Hello, world!";
+			};
+
+			~Element()
+			{
+			};
+			
+			private String connectionString;
+			private Long options;
+			
+			public Boolean Connect(String<utf8> ConnectionString, Long Options)
+			{
+				this.that.theOther.Connect("JFDI", ConnectionString.ToNonString(), ConvertInSomeManner(Options));
+			};
+			
+			public Boolean Disconnect()
+			{
+			};
+			
+			public Sparx.EA.ElementList RelatedElements = null;
+		}
+	}
+}

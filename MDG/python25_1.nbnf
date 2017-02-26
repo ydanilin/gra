@@ -1,0 +1,453 @@
+// Python Grammar
+//
+// Derived from:
+// - http://www.python.org/doc/2.5.2/ref/grammar.txt
+// - http://docs.python.org/3.1/reference/index.html
+// - http://www.network-theory.co.uk/docs/pylang/Indentation.html
+//
+// Guido is to blame!
+
+caseSensitive();
+
+delimiters(<DELIMITER>);
+//tabSize(8);
+
+lex(<TOKENS>);
+
+// parse(<language>, <languageEscape>);
+parse(<language>);
+
+// ***
+// * Lexer section
+// ***
+<DELIMITER>				::= "\n" | "\r" | "\t" |  " " |
+						"~"  | "`"  | "!"  |  "@" |
+						"#"  | "$"  | "%"  |  "^" |
+						"&"  | "*"  | "("  | ")"  |
+						"-"  | "+"  | "="  | "{"  |
+						"["  | "}"  | "]"  | ";"  |
+						":"  | "\\" | "\'" | "\"" |
+						","  | "<"  | ">"  | "/"  |
+						"?"  | "|"  | ".";
+
+<TOKENS>			::= token(<COMMENT>) |
+					token(<WHITESPACE>) |
+					token(<NEWLINE>) |
+					token(<NUMBER>) |
+					token(<STRING>) |
+					token(keywords()) |
+					token(<IDENTIFIER>);
+
+<WHITESPACE>			::= " " | "\t";
+
+<NEWLINE>			::= "\r\n" | "\r" | "\n";
+
+// this will consume newlines after comments, which is kinda good and kinda bad.
+// the language expects to consume a newline after comments that are on their
+// own line, but not for comments that share their line with code.
+//
+// a new level of hidious
+<COMMENT>			::= "#" skip("\r\n" | "\n");// ("\r\n" | "\n");
+
+<NUMBER>			::= <FLOAT_NUMBER> |
+					<HEX_NUMBER> |
+					<OCT_NUMBER> |
+					<DEC_NUMBER>;
+
+<IDENTIFIER>			::= ("a".."z" | "A".."Z" | "_" ) ("a".."z" | "A".."Z" | "0".."9" | "_")*;
+  
+<STRING>			::= [<STRING_PREFIX>] <STRING_BODY>;
+  
+<STRING_PREFIX>			::= "r" | "u" | "ur" | "R" | "U" | "UR" | "Ur" | "uR";
+  
+<STRING_BODY>			::= "'''" skip("'''") "'''" | 
+					"'" skip("'", "\\\'" | "\\\\") "'" |
+					"\"\"\"" skip("\"\"\"") "\"\"\"" |
+					"\"" skip("\"", "\\\"" | "\\\\") "\"";
+
+<HEX_NUMBER>		::= "0" ("x" | "X") ("0".."9" | "a".."f" | "A".."F")+ ["l" | "L"];
+  
+<OCT_NUMBER>			::= "0" "0".."7"+ ["l" | "L"];
+
+<DEC_NUMBER>			::= "0".."9"+ ["l" | "L"];
+
+<FLOAT_NUMBER>	::= "0".."9"+ "." ["0".."9"+] [("e" | "E") ["+" | "-"] "0".."9"+] ["j" | "J"] |
+		"." "0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+] ["j" | "J"] |
+		"0".."9"+ ("e" | "E") ["+" | "-"] "0".."9"+ ["j" | "J"] |
+		"0".."9"+ [("e" | "E") ["+" | "-"] "0".."9"+] ("j" | "J");
+
+// ***
+// * Language section
+// ***
+<name>				::= <IDENTIFIER> |
+					<nonKeywords>;
+
+<nonKeywords>			::= "l" | "L";
+
+//<language>			::= node("FILE", (<SC>* <NEWLINE> | <statement>)*);
+<language>			::= node("FILE", (<statement>)*);
+
+//<languageEscape>		::= "\\" <S>* <NEWLINE>;
+
+<S>				::= <WHITESPACE>;
+
+//<SC>				::= <WHITESPACE> | 
+//					<COMMENT>;
+
+//<SL>				::= <WHITESPACE> | 
+//					<NEWLINE>;
+
+<SCL>				::= <WHITESPACE> |
+					<COMMENT> |
+					<NEWLINE>;
+
+// ***
+// * Statements
+// ***
+//<suite>				::= <statementList> [<S>* <COMMENT>] <NEWLINE> | 
+//					(<SC>* <NEWLINE>)+ indent() <statement> (level() <statement> | <S>* <COMMENT> <NEWLINE> | <S>* <NEWLINE>)* dedent();
+<suite>				::= 
+					(<NEWLINE>)+ indent() <statement> (level() <statement> | <NEWLINE>)* [dedent()];  //ajusted
+
+//<statement>			::= <S>* <COMMENT> <NEWLINE> |
+//					<statementList> <S>* [<COMMENT>] <NEWLINE> | 
+//					<compoundStatement>;
+<statement>			::= 
+					<statementList> [<NEWLINE>] |   //ajusted. seems work...
+					<compoundStatement>;
+
+//<statementList>		::= <simpleStatement> (<S>* ";" <S>* <simpleStatement>)* [<S>* ";"];
+<statementList>		::= <simpleStatement> <simpleStatement>*;
+
+<simpleStatement>	::= //<assertStatement> | 
+					<assignmentStatement> //| 
+					//<augmentedAssignmentStatement> | 
+					//<passStatement> | 
+					//<deleteStatement> | 
+					//<printStatement> | 
+					//<returnStatement> | 
+					//<yieldStatement> | 
+					//<raiseStatement> | 
+					//<breakStatement> | 
+					//<continueStatement> | 
+					//<importStatement> | 
+					//<globalStatement> | 
+					//<execStatement> | 
+					//<expressionStatement>
+					;
+
+//<expressionStatement>	::= <expressionList>;
+
+//<assertStatement>	::= "assert" <S>* <expression> [<S>* "," <S>* <expression>];
+
+//<assignmentStatement>	::= (<targetList> <S>* "=" <S>*)+ (<S>* <expressionList> | <S>* <yieldExpression>);
+<assignmentStatement>	::= <targetList> "=" <expressionList>;
+
+//<augmentedAssignmentStatement>	::= <target> <S>* <augmentedOperator> (<S>* <expressionList> | <S>* <yieldExpression>);
+  
+//<augmentedOperator>	::= "+=" | "-=" | "*=" | "/=" | "//=" | "%=" | "**=" | 
+//					">>=" | "<<=" | "&=" | "^=" | "|=";
+
+//<passStatement>			::= "pass";
+
+//<deleteStatement>		::= "del" <S>* <targetList>;
+
+//<printStatement>	::= "print" (
+//				<S>* ">>" <S>* <expression> (<S>* "," <S>* <expression>)* [<S>* ","] | 
+//				[<S>* <expression>] (<S>* "," <S>* <expression>)* [<S>* ","]
+//				);
+
+//<returnStatement>		::= "return" [<S>* <expressionList>];
+
+//<yieldStatement>		::= <yieldExpression>;
+
+//<raiseStatement>		::= "raise" [<S>* <expression> [<S>* "," <S>* <expression> [<S>* "," <S>* <expression>]]];
+
+//<breakStatement>		::= "break";
+
+//<continueStatement>		::= "continue";
+
+//<importStatement>		::= "import" <S>* <importModule> [<S>* "as" <S>* <importName>] (<S>* "," <S>* <importModule> [<S>* "as" <S>* <importName>])* | 
+//					"from" <S>* <importRelativeModule> <S>* "import" <S>* <name> [<S>* "as" <S>* <importName>] (<S>* "," <S>* <name> [<S>* "as" <S>* <importName>])* | 
+//					"from" <S>* <importRelativeModule> <S>* "import" <S>* "(" <SCL>* <name> [<S>* "as" <S>* <importName>] (<SCL>* "," <SCL>* <name> [<S>* "as" <S>* <importName>])* [<SCL>* ","] <SCL>* ")" | 
+//					"from" <S>* <importModule> <S>* "import" <S>* "*";
+
+//<importModule>			::= <name> ("." <name>)*;
+
+//<importRelativeModule>		::= "."* <importModule> | 
+//					"."+;
+
+//<importName>			::= <name>;
+
+//<globalStatement>		::= "global" <S>* <name> (<S>* "," <S>* <name>)*;
+
+//<execStatement>			::= "exec" <S>* <bitwiseOrExpression> [<S>* "in" <S>* <expression> [<S>* "," <S>* <expression>]];
+
+<compoundStatement>		::= //<ifStatement> | 
+					//<whileStatement> |
+					//<forStatement> |
+					//<tryStatement> | 
+					//<withStatement> | 
+					<functionDefinition> | 
+					<classDefinition>;
+  
+//<ifStatement>			::= "if" <S>* <expression> <S>* ":" <SC>* <suite> (level() "elif" <S>* <expression> <S>* ":" <SC>* <suite>)* [level() "else" <S>* ":" <SC>* <suite>];
+
+//<whileStatement>		::= "while" <S>* <expression> <S>* ":" <SC>* <suite> [level() "else" <S>* ":" <SC>* <suite>];
+
+//<forStatement>			::= "for" <S>* <targetList> <S>* "in" <S>* <expressionList> <S>* ":" <SC>* <suite> [level() "else" <S>* ":" <SC>* <suite>];
+
+//<tryStatement>			::= <tryStatementLong> | 
+//					<tryStatementShort>;
+
+//<tryStatementLong>		::= "try" <S>* ":" <SC>* <suite> (level() "except" [<S>* <expression> [<S>* "," <S>* <target>]] <S>* ":" <SC>* <suite>)+ [level() "else" <S>* ":" <SC>* <suite>] ["finally" <S>* ":" <SC> <suite>];
+
+//<tryStatementShort>		::= "try" <S>* ":" <SC>* <suite> level() "finally" <S>* ":" <SC>* <suite>;
+
+//<withStatement>			::= "with" <S>* <expression> [<S>* "as" <S>* <target>] <S>* ":" <SC>* <suite>;
+
+//<functionDefinition>		::= <functionDecorator>* <S>* "def" <S>* <functionName> <S>* "(" [<S>* <parameterList>] <S>* ")" <S>* ":" <SC>* <suite>;
+<functionDefinition>		::= "def" <S>* <functionName> "(" [<parameterList>] ")" ":" <suite>;
+
+<functionName>			::= <name>;
+
+//<functionDecorator>		::= "@" <functionDecoratorName> [<S>* "(" [<S>* <argumentList> [<S>* ","]] <S>* ")"] <SC>* <NEWLINE>;
+
+//<functionDecoratorName>		::= <name> ("." <name>)*;
+
+//<classDefinition>		::= "class" <S>* <className> [<S>* <inheritance>] <S>* ":" <SC>* <suite>;
+<classDefinition>		::= "class" <S>* <className> ":" <suite>;
+
+<className>			::= <name>;
+
+//<inheritance>			::= "(" [<S>* <expressionList>] <S>* ")";
+
+//<targetList>			::= <target> (<S>* "," <S>* <target>)* [<S>* ","];
+<targetList>			::= <target> ;
+
+<target>			::= //"(" <S>* <targetList> <S>* ")" | 
+					//"[" <S>* <targetList> <S>* "]" | 
+					//<attributeReference> | 
+					//<subscription> | 
+					//<slicing> |
+					//<name>;
+					<primary>;
+
+<parameterList>			::= (<parameterDefault> <S>* "," <SCL>*)* (<S>* "*" <name> [<S>* "," <SCL>* "**" <S>* <name>] | <S>* "**" <S>* <name>) | 
+					<parameterDefault> (<S>* "," <SCL>* <parameterDefault>)* [<S>* "," <SCL>*];
+
+<parameterDefault>		::= <parameter> [<S>* "=" <S>* <expression>];
+
+<sublist>			::= <parameter> (<S>* "," <S>* <parameter>)* [<S>* ","];
+  
+<parameter>			::= <name> | 
+					"(" <S>* <sublist> <S>* ")";
+
+// ***
+// * Expressions
+// ***
+<expressionList>		::= <expression> (<S>* "," <SCL>* <expression>)* [<S>* ","];
+
+<expression>			::= <conditionalExpression> | 
+					<lambdaForm>;
+  
+<oldExpression>			::= <logicalOrExpression> | 
+					<oldLambdaForm>;
+  
+<lambdaForm>			::= "lambda" [<S>* <parameterList>] <S>* ":" <SCL>* <expression>;
+  
+<oldLambdaForm>			::= "lambda" [<S>* <parameterList>] <S>* ":" <SCL>* <oldExpression>;
+
+<conditionalExpression>		::= <logicalOrExpression> [<S>* "if" <S>* <logicalOrExpression> <S>* "else" <S>* <expression>];
+  
+<logicalOrExpression>		::= preprocess(<logicalAndExpression>, 
+					<?> <SCL>* "or" <SCL>* <logicalOrExpression> |
+					<?>
+					);
+  
+<logicalAndExpression>		::= preprocess(<logicalNotExpression>,
+					<?> <SCL>* "and" <SCL>* <logicalAndExpression> |
+					<?>
+					);
+  
+<logicalNotExpression>		::= preprocess(<relationalExpression>,
+					<?> <SCL>* "not" <SCL>* <logicalNotExpression> |
+					<?>
+					);
+
+<relationalExpression>		::= preprocess(<bitwiseOrExpression>,
+					<?> <SCL>* "<" <SCL>* <relationalExpression> | 
+					<?> <SCL>* ">" <SCL>* <relationalExpression> | 
+					<?> <SCL>* "==" <SCL>* <relationalExpression> | 
+					<?> <SCL>* ">=" <SCL>* <relationalExpression> | 
+					<?> <SCL>* "<=" <SCL>* <relationalExpression> | 
+					<?> <SCL>* "<>" <S>* <relationalExpression> | 
+					<?> <SCL>* "!=" <SCL>* <relationalExpression> | 
+					<?> <SCL>* "is" [<SCL>* "not"] <SCL>* <relationalExpression> | 
+					<?> <SCL>* ["not" <SCL>*] "in" <SCL>* <relationalExpression> |
+					<?>
+					);
+  
+<bitwiseOrExpression>		::= preprocess(<bitwiseXorExpression>,
+					<?> <SCL>* "|" <SCL>* <bitwiseOrExpression> |
+					<?>
+					);
+
+<bitwiseXorExpression>		::= preprocess(<bitwiseAndExpression>,
+					<?> <SCL>* "^" <SCL>* <bitwiseXorExpression> |
+					<?>
+					);
+
+<bitwiseAndExpression>		::= preprocess(<shiftExpression>,
+					<?> <SCL>* "&" <SCL>* <bitwiseAndExpression> |
+					<?>
+					);
+
+<shiftExpression>		::= preprocess(<additiveExpression>,
+					<?> <SCL>* "<<" <SCL>* <shiftExpression> |
+					<?> <SCL>* ">>" <SCL>* <shiftExpression> |
+					<?>
+					);
+
+<additiveExpression>		::= preprocess(<multiplicativeExpression>,
+					<?> <SCL>* "+" <SCL>* <additiveExpression> | 
+					<?> <SCL>* "-" <SCL>* <additiveExpression> |
+					<?>
+					);
+
+<multiplicativeExpression> 	::= preprocess(<unaryExpression>,
+					<?> <SCL>* "*" <SCL>* <multiplicativeExpression> | 
+					<?> <SCL>* "/" <SCL>* <multiplicativeExpression> | 
+					<?> <SCL>* "//" <SCL>* <multiplicativeExpression> | 
+					<?> <SCL>* "%" <SCL>* <multiplicativeExpression> |
+					<?>
+					);
+
+<unaryExpression> 		::= "-" <SCL>* <unaryExpression> | 
+					"+" <SCL>* <unaryExpression> | 
+					"~" <SCL>* <unaryExpression> |
+					"not" <SCL>* <unaryExpression> |
+					<power>;
+
+<power>				::= <primary> [<S>* "**" <S>* <unaryExpression>];
+
+<primary>			::= <call> | 
+					<attributeReference> | 
+					<slicing> | 
+					<subscription> | 
+					<atom>;
+
+<atom>				::= <name> | 
+					<literal> | 
+					<enclosure>;
+
+<literal>			::= <STRING> (<SCL>* <STRING>)* ["." <primary>] | 
+					<integer> | 
+//					<longInteger> |
+					<FLOAT_NUMBER>;
+
+<integer>			::= <HEX_NUMBER> | 
+					<OCT_NUMBER> | 
+					<DEC_NUMBER>;
+
+//<longInteger>			::= <integer> ("l" | "L");
+
+<enclosure>			::= <bracedExpression> [<callArguments>] ["." <primary>] | 
+					<listDisplay>+ | 
+					<generatorExpression> | 
+					<dictDisplay> | 
+					<stringConversion> | 
+					<yieldAtom>;
+
+<bracedExpression>		::= "(" [<SCL>* <expressionList>] <SCL>* ")";
+
+<listDisplay>			::= "[" [<SCL>* <listComprehension> | <SCL>* <expressionList>] <SCL>* "]";
+
+<listComprehension>		::= <expression> <SCL>* <listFor>;
+
+<listFor>			::= "for" <S>* <targetList> <SCL>* "in" <S>* <oldExpressionList> [<SCL>* <listIterator>];
+
+<oldExpressionList>		::= <oldExpression> [(<S>* "," <S>* <oldExpression>)+ [<S>* ","]];
+  
+<listIterator>			::= <listFor> | 
+					<listIf>;
+
+<listIf>			::= "if" <S>* <oldExpression> [<S>* <listIterator>];
+
+<generatorExpression>		::= "(" <S>* <expression> <SCL>* <genexprFor> <S>* ")";
+  
+<genexprFor>			::= "for" <S>* <targetList> <S>* "in" <S>* <logicalOrExpression> [<SCL>* <genexprIterator>];
+  
+<genexprIterator>		::= <genexprFor> | 
+					<genexprIf>;
+  
+<genexprIf>			::= "if" <S>* <oldExpression> [<S>* <genexprIterator>];
+
+<dictDisplay>			::= "{" [<SCL>* <keyDatumList>] <SCL>* "}";
+  
+<keyDatumList>			::= <keyDatum> (<SCL>* "," <SCL>* <keyDatum>)* [<SCL>* ","];
+  
+<keyDatum>			::= <expression> <S>* ":" <SCL>* <expression>;
+
+<stringConversion>		::= "`" <S>* <expressionList> <S>* "`";
+
+<yieldAtom>			::= "(" <S>* <yieldExpression> <S>* ")";
+  
+<yieldExpression>		::= "yield" [<S>* <expressionList>];
+
+<attributeReference>		::= <name> "." <primary>;
+
+<subscription>			::= <name> <S>* ("[" <S>* <expressionList> <S>* "]")+ ["." <primary>];
+
+<slicing>			::= <simpleSlicing> | 
+					<extendedSlicing>;
+  
+<simpleSlicing>			::= <name> <S>* ("[" <S>* <shortSlice> <S>* "]")+ ["." <primary>];
+  
+<extendedSlicing>		::= <name> <S>* ("[" <S>* <sliceList> <S>* "]")+ ["." <primary>];
+  
+<sliceList>			::= <sliceItem> (<S>* "," <S>* <sliceItem>)* [<S>* ","];
+  
+<sliceItem>			::= <properSlice> | 
+					<ellipsis> | 
+					<expression>;
+
+<properSlice>			::= <shortSlice> | 
+					<longSlice>;
+  
+<shortSlice>			::= [<lowerBound> <S>*] ":" [<S>* <upperBound>];
+  
+<longSlice>			::= <shortSlice> <S>* ":" [<S>* <stride>];
+  
+<lowerBound>			::= <expression>;
+  
+<upperBound>			::= <expression>;
+  
+<stride>			::= <expression>;
+
+<ellipsis>			::= "...";
+
+//<call>				::= lookahead(<name> <S>* "(" [<S>* <expression> <S>* <genexprFor> | <SCL>* <argumentList> [<SCL>* ","] <SCL>*] <S>* ")",
+//					<?> <S>* "[" <S>* <shortSlice> <S>* "]" |
+//					<?> <S>* "[" <S>* <sliceList> <S>* "]" |
+//					<?>
+//					);
+
+<call>				::= <name> (<S>* <callArguments> | <S>* <callSlicing>)+ ["." <primary>];
+
+<callArguments>			::= "(" [<S>* <expression> <S>* <genexprFor> | <SCL>* <argumentList> [<SCL>* ","] <SCL>*] <S>* ")";
+
+<callSlicing>			::= "[" <S>* <shortSlice> <S>* "]" |
+					"[" <S>* <sliceList> <S>* "]";
+
+<argumentList>			::= <keywordArguments> [<S>* "," <S>* "*" <S>* <expression>] [<S>* "," <S>* "**" <S>* <expression>] | 
+//					<positionalArguments> [<S>* "," <S>* <keywordArguments>] [<S>* "," <S>* "*" <S>* <expression>] [<S>* "," <S>* "**" <S>* <expression>] | 
+					"*" <S>* <expression> [<S>* "," <S>* "**" <S>* <expression>] | 
+					"**" <S>* <expression>;
+
+//<positionalArguments>		::= <expression> (<S>* "," <SCL>* <expression>)*;
+
+<keywordArguments>		::= <keywordItem> (<SCL>* "," <SCL>* <keywordItem>)*;
+
+<keywordItem>			::= <name> <S>* "=" <S>* <expression> |
+					<expression>;

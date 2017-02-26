@@ -1,0 +1,7 @@
+expr_stmt
+         ::= ( test | '*' expr ) ( ',' ( test | '*' expr ) )* ','? ( annassign
+                                  | 
+                                  augassign ( yield_expr | testlist )
+                                  |
+                                  ( '=' ( yield_expr | (( test | '*' expr ) ( ',' ( test | '*' expr ) )* ','?) ) )*
+                                )
