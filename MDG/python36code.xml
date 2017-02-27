@@ -84,9 +84,16 @@ parse(<proceed>);
 								  node("BODY", <suite>)
 					    );
 
+<construct>     ::= node("METHOD", node("DECLARATION", "def" <S>+ "__init__"
+                                                       attributeEx("NAME", "__huj__") 
+                                                       <parameters> ":"
+									   )
+                                   <suite>
+						);
+
 <funcdef>		::= node("METHOD", node("DECLARATION", "def" <S>+
-                                        attribute("NAME", <NAME>)
-								        <parameters> ["->" <test>] ":"
+                                                       attribute("NAME", <NAME>)
+								                       <parameters> ["->" <test>] ":"
 								       )
 								   <suite>
 						);
@@ -106,7 +113,7 @@ parse(<proceed>);
   | "*" [<tfpdef>] ("," <tfpdef> ["=" <test>])* ["," ["**" <tfpdef> [","]]]
   | "**" <tfpdef> [","]);
   
-<tfpdef>			::= node("PARAMETER", attribute("NAME", <NAME>) [":" attribute("TYPE", <test>)]);
+<tfpdef>			::= "self" | node("PARAMETER", attribute("NAME", <NAME>) [":" attribute("TYPE", <test>)]);
 
 <varargslist>		::= (<vfpdef> ["=" <test>] ("," <vfpdef> ["=" <test>])* ["," [
         "*" [<vfpdef>] ("," <vfpdef> ["=" <test>])* ["," ["**" <vfpdef> [","]]]
@@ -149,7 +156,16 @@ parse(<proceed>);
 <nonlocal_stmt>		::= "nonlocal" <NAME> ("," <NAME>)*;
 <assert_stmt>		::= "assert" <test> ["," <test>];
 
-<compound_stmt>		::= <if_stmt> | <while_stmt> | <for_stmt> | <try_stmt> | <with_stmt> | <funcdef> | <classdef> | <decorated> | <async_stmt>;
+<compound_stmt>		::= <if_stmt>
+                        | <while_stmt>
+						| <for_stmt>
+						| <try_stmt>
+						| <with_stmt>
+						| <construct>
+						| <funcdef>
+						| <classdef>
+						| <decorated>
+						| <async_stmt>;
 <async_stmt>		::= <ASYNC> (<funcdef> | <with_stmt> | <for_stmt>);
 <if_stmt>			::= "if" <test> ":" <suite> ("elif" <test> ":" <suite>)* ["else" ":" <suite>];
 <while_stmt>		::= "while" <test> ":" <suite> ["else" ":" <suite>];
