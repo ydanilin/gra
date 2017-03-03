@@ -73,11 +73,12 @@ parse(<proceed>);
 <S>				::= <WHITESPACE>;
 <SC>			::= <WHITESPACE> | 
 					<COMMENT>;
-					
+<SL>            ::= <WHITESPACE> | <NEWLINE>;
+
 <suite>			::= <simple_stmt> | <NEWLINE> indent() <stmt> (level() <stmt>)* dedent();
-// insert here special suite for constructor
-<cons_stmt>     ::= "self" "." <NAME> "=" <test> | <stmt>;
-<construct_suite>			::= <simple_stmt> | <NEWLINE> indent() <stmt> (level() <stmt>)* dedent();
+
+<construct_suite>			::= <simple_stmt> | <NEWLINE> indent() (<self_assignment> | <stmt>) (level() (<self_assignment> | <stmt>))* dedent();
+<self_assignment>     ::= "self" "." node("ATTRIBUTE", attribute("NAME", <NAME>) <S>* "=" <S>* attribute("DEFAULT", <test>)) <NEWLINE>;
 
 <classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
                                                       attribute("NAME", <NAME>)
@@ -86,12 +87,7 @@ parse(<proceed>);
 								  node("BODY", <suite>)
 					    );
 
-<construct>     ::= node("METHOD", node("DECLARATION", "def" <S>+ "__init__"
-                                                       attributeEx("NAME", "__huj__") 
-                                                       <parameters> ":"
-									   )
-                                   <construct_suite>
-						);
+<construct>     ::= "def" <S>+ "__init__" <construct_parameters> ":" <construct_suite>;
 
 <funcdef>		::= node("METHOD", node("DECLARATION", "def" <S>+
                                                        attribute("NAME", <NAME>)
@@ -109,13 +105,21 @@ parse(<proceed>);
 <async_funcdef>		::= <ASYNC> <funcdef>;
 
 <parameters>		::= "(" [<typedargslist>] ")";
-<typedargslist>		::= (<tfpdef> ["=" <test>] ("," <tfpdef> ["=" <test>])* ["," [
+<construct_parameters> ::=  "(" [<construct_typedargslist>] ")";
+
+<typedargslist>		::= (<S>* <tfpdef> <S>* ["=" <S>* <test> <S>*] ("," <S>* <tfpdef> <S>* ["=" <S>* <test> <S>*])* ["," [
         "*" [<tfpdef>] ("," <tfpdef> ["=" <test>])* ["," ["**" <tfpdef> [","]]]
       | "**" <tfpdef> [","]]]
   | "*" [<tfpdef>] ("," <tfpdef> ["=" <test>])* ["," ["**" <tfpdef> [","]]]
   | "**" <tfpdef> [","]);
-  
-<tfpdef>			::= "self" | node("PARAMETER", attribute("NAME", <NAME>) [":" attribute("TYPE", <test>)]);
+<construct_typedargslist>		::= (<S>* <c_tfpdef> <S>* ["=" <S>* <test> <S>*] ("," <S>* <c_tfpdef> <S>* ["=" <S>* <test> <S>*])* ["," [
+        "*" [<c_tfpdef>] ("," <c_tfpdef> ["=" <test>])* ["," ["**" <c_tfpdef> [","]]]
+      | "**" <c_tfpdef> [","]]]
+  | "*" [<c_tfpdef>] ("," <c_tfpdef> ["=" <test>])* ["," ["**" <c_tfpdef> [","]]]
+  | "**" <c_tfpdef> [","]);
+
+<tfpdef>			::= "self" | node("PARAMETER", attribute("NAME", <NAME>) [<S>* ":" <S>* attribute("TYPE", <test>)]);
+<c_tfpdef>			::= "self" | <NAME> [<S>* ":" <S>* <test>];
 
 <varargslist>		::= (<vfpdef> ["=" <test>] ("," <vfpdef> ["=" <test>])* ["," [
         "*" [<vfpdef>] ("," <vfpdef> ["=" <test>])* ["," ["**" <vfpdef> [","]]]
@@ -153,14 +157,14 @@ parse(<proceed>);
 <yield_stmt>		::= <yield_expr>;
 <raise_stmt>		::= "raise" [<test> ["from" <test>]];
 <import_stmt>		::= <import_name> | <import_from>;
-<import_name>		::= "import" <dotted_as_names>;
+<import_name>		::= "import" <S>+ <dotted_as_names>;
 // note below: the ("." | "...") is necessary because "..." is tokenized as ELLIPSIS
-<import_from>		::= ("from" (("." | "...")* <dotted_name> | ("." | "...")+)
-              "import" ("*" | "(" <import_as_names> ")" | <import_as_names>));
-<import_as_name>	::= <NAME> ["as" <NAME>];
-<dotted_as_name>	::= <dotted_name> ["as" <NAME>];
-<import_as_names>	::= <import_as_name> ("," <import_as_name>)* [","];
-<dotted_as_names>	::= <dotted_as_name> ("," <dotted_as_name>)*;
+<import_from>		::= ("from" <S>+ (("." | "...")* <dotted_name> | ("." | "...")+)
+                         <S>+ "import" <S>* ("*" | "(" <S>* <import_as_names> <S>* ")" | <import_as_names>));
+<import_as_name>	::= <NAME> [<S>* "as" <S>* <NAME>];
+<dotted_as_name>	::= <dotted_name> [<S>* "as" <S>* <NAME>];
+<import_as_names>	::= <import_as_name> (<S>* "," <SL>* <import_as_name>)* [<S>* "," <S>*];
+<dotted_as_names>	::= <dotted_as_name> (<S>* "," <S>* <dotted_as_name>)*;
 <dotted_name>		::= <NAME> ("." <NAME>)*;
 
 <selfed_name>       ::= "self" "." <NAME>;
@@ -180,7 +184,7 @@ parse(<proceed>);
 						| <decorated>
 						| <async_stmt>;
 <async_stmt>		::= <ASYNC> (<funcdef> | <with_stmt> | <for_stmt>);
-<if_stmt>			::= "if" <test> ":" <suite> ("elif" <test> ":" <suite>)* ["else" ":" <suite>];
+<if_stmt>			::= "if" <S>+ <test> ":" <SC>* <suite> ("elif" <S>+ <test> ":" <SC>* <suite>)* ["else" ":" <SC>* <suite>];
 <while_stmt>		::= "while" <test> ":" <suite> ["else" ":" <suite>];
 <for_stmt>			::= "for" <exprlist> "in" <testlist> ":" <suite> ["else" ":" <suite>];
 <try_stmt>			::= ("try" ":" <suite>

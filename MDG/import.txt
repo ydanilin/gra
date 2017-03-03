@@ -1,0 +1,5 @@
+import_stmt
+         ::= 'import'  NAME ( '.' NAME )* ( 'as' NAME )? ( ','  NAME ( '.' NAME )* ( 'as' NAME )? )*
+           | 
+'from' ( '.' | '...' )* ( NAME ( '.' NAME )* | '.' | '...' ) 'import' ( '*' | '(' NAME ( 'as' NAME )? ( ',' NAME ( 'as' NAME )? )* ','? ')' | NAME ( 'as' NAME )? ( ',' NAME ( 'as' NAME )? )* ','? )
+

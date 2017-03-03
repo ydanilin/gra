@@ -76,6 +76,10 @@ parse(<proceed>);
 					<COMMENT>;
 					
 <suite>			::= <simple_stmt> | <NEWLINE> indent() <stmt> (level() <stmt>)* dedent();
+// insert here special suite for constructor
+<construct_suite>			::= <simple_stmt> | <NEWLINE> indent() (<cons_stmt> | <stmt>) (level() (<cons_stmt> | <stmt>))* dedent();
+//<cons_stmt>     ::= "self" "." node("FIELD", node("DECLARATOR", attribute("NAME", <NAME>)) node("DEFAULT", <S>* "=" <S>* attribute("VALUE", <test>)));
+<cons_stmt>     ::= "self" "." node("ATTRIBUTE", attribute("NAME", <NAME>) <S>* "=" <S>* attribute("DEFAULT", <test>)) <NEWLINE>;
 
 <classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
                                                       attribute("NAME", <NAME>)
@@ -84,12 +88,7 @@ parse(<proceed>);
 								  node("BODY", <suite>)
 					    );
 
-<construct>     ::= node("METHOD", node("DECLARATION", "def" <S>+ "__init__"
-                                                       attributeEx("NAME", "__huj__") 
-                                                       <parameters> ":"
-									   )
-                                   <suite>
-						);
+<construct>     ::= "def" <S>+ "__init__" <parameters> ":" <construct_suite>;
 
 <funcdef>		::= node("METHOD", node("DECLARATION", "def" <S>+
                                                        attribute("NAME", <NAME>)
@@ -125,8 +124,16 @@ parse(<proceed>);
 
 <stmt>				::= <S>* <COMMENT> <NEWLINE> | <simple_stmt> | <compound_stmt>;
 <simple_stmt>		::= <small_stmt> (";" <small_stmt>)* [";"] <NEWLINE>;
-<small_stmt>		::= (<expr_stmt> | <del_stmt> | <pass_stmt> | <flow_stmt> |
-             <import_stmt> | <global_stmt> | <nonlocal_stmt> | <assert_stmt>);
+<small_stmt>		::= (<expr_stmt>
+                         | <del_stmt>
+						 | <pass_stmt>
+						 | <flow_stmt>
+						 | <import_stmt>
+						 | <global_stmt>
+						 | <nonlocal_stmt>
+						 | <assert_stmt>
+						);
+
 <expr_stmt>			::= <testlist_star_expr> <S>* (<annassign> | <augassign> (<yield_expr> | <testlist>) |
                      ("=" <S>* (<yield_expr> | <testlist_star_expr>))*);
 <annassign>			::= ":" <test> ["=" <test>];
@@ -152,6 +159,9 @@ parse(<proceed>);
 <import_as_names>	::= <import_as_name> ("," <import_as_name>)* [","];
 <dotted_as_names>	::= <dotted_as_name> ("," <dotted_as_name>)*;
 <dotted_name>		::= <NAME> ("." <NAME>)*;
+
+<selfed_name>       ::= "self" "." <NAME>;
+
 <global_stmt>		::= "global" <NAME> ("," <NAME>)*;
 <nonlocal_stmt>		::= "nonlocal" <NAME> ("," <NAME>)*;
 <assert_stmt>		::= "assert" <test> ["," <test>];
@@ -202,10 +212,17 @@ parse(<proceed>);
 <factor>			::= ("+"|"-"|"~") <factor> | <power>;
 <power>		::= <atom_expr> ["**" <factor>];
 <atom_expr>		::= [<AWAIT>] <atom> <trailer>*;
-<atom>		::= ("(" [<yield_expr> | <testlist_comp>] ")" |
-       "[" [<testlist_comp>] "]" |
-       "{" [<dictorsetmaker>] "}" |
-       <NAME> | <NUMBER> | (<STRING>)+ | "..." | "None" | "True" | "False");
+<atom>		::= ("(" [<yield_expr> | <testlist_comp>] ")"
+                 | "[" [<testlist_comp>] "]"
+				 | "{" [<dictorsetmaker>] "}"
+				 | <selfed_name>
+				 | <NAME>
+				 | <NUMBER>
+				 | (<STRING>)+
+				 | "..."
+				 | "None"
+				 | "True"
+				 | "False");
 <testlist_comp>		::= (<test> | <star_expr>) ( <comp_for> | ("," (<test> | <star_expr>))* [","] );
 <trailer>		::= "(" [<arglist>] ")" | "[" <subscriptlist> "]" | "." <NAME>;
 <subscriptlist>		::= <subscript> ("," <subscript>)* [","];
