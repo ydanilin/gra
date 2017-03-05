@@ -95,7 +95,13 @@ parse(<proceed>, <languageEscape>);
 					        )*
                            [dedent()];
 
-<self_assignment>     ::= "self" "." node("ATTRIBUTE", attribute("NAME", <NAME> <S>* ) "=" <S>* attribute("DEFAULT", <test>)) <NEWLINE>;
+<self_assignment>     ::= "self" "." node("ATTRIBUTE",
+                                          attribute("NAME", <NAME> <S>*)
+										  ":" <S>*
+										  attribute("TYPE", <test>)
+										  "=" <S>* attribute("DEFAULT", <test>)
+										  )
+							<NEWLINE>;
 
 <classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
                                                       attribute("NAME", <NAME> <S>*)
@@ -184,7 +190,7 @@ parse(<proceed>, <languageEscape>);
 <dotted_as_names>	::= <dotted_as_name> ("," <S>* <dotted_as_name>)*;
 <dotted_name>		::= <NAME> <S>*  ("." <S>* <NAME> <S>* )*;
 
-<selfed_name>       ::= "self" <S>* "." <S>* <NAME> <S>* ;
+//<selfed_name>       ::= "self" <S>* "." <S>* <NAME> <S>* ;
 
 <global_stmt>		::= "global" <S>* <NAME> <S>*  ("," <S>* <NAME> <S>* )*;
 <nonlocal_stmt>		::= "nonlocal" <S>* <NAME> <S>*  ("," <S>* <NAME> <S>* )*;
@@ -240,7 +246,7 @@ parse(<proceed>, <languageEscape>);
 <atom>		::= ("(" <S>* [<yield_expr> | <testlist_comp>] ")" <S>*
                  | "[" <S>* [<testlist_comp>] "]" <S>* 
 				 | "{" <S>* [<dictorsetmaker>] "}" <S>* 
-				 | <selfed_name>
+				 //| <selfed_name>
 				 | <NAME> <S>* 
 				 | <NUMBER> <S>* 
 				 | (<STRING> <S>* )+
