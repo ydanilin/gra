@@ -9,11 +9,14 @@ from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
 # inspector = inspect(engine)
 # inspector.get_columns('book')
 class DBMS:
-    def __init__(self, database=None):
+    """ DJHUJ!!!
+"""
+    def __init__(self, database:str=None):
         if database:
             address = 'sqlite:///' + database
         else:
             address = 'sqlite://'
+        self.puk:str = 'djhuj' # ty - HUJ!!!
         self.engine = create_engine(address)
         self.connection = self.engine.connect()
         self.metadata = MetaData()
@@ -51,7 +54,7 @@ class DBMS:
 
     # **********************************
     # Public interface functions
-    def addNode(self, parent):
+    def addNode(self, parent:int):
         """supply parent = None to add root label"""
         # internal names
         # x - new node label; y - parent to attach to

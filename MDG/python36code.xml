@@ -7,7 +7,7 @@ caseSensitive();
 delimiters(<DELIMITER>);
 //tabSize(8);
 lex(<TOKENS>);
-parse(<proceed>);
+parse(<proceed>, <languageEscape>);
 
 
 // Tokens:
@@ -65,6 +65,7 @@ parse(<proceed>);
 //<language>			::= node("FILE", <file_input>);
 <proceed>           ::= <language>;
 <language>			::= (<file_input>)*;
+<languageEscape>				::= "\\" <S>* <NEWLINE>;
 
 //<single_input>		::= <NEWLINE> | <simple_stmt> | <compound_stmt> <NEWLINE>;
 //<file_input>		::= (<NEWLINE> | <stmt>)* <ENDMARKER>;
@@ -74,57 +75,95 @@ parse(<proceed>);
 <S>				::= <WHITESPACE>;
 <SC>			::= <WHITESPACE> | 
 					<COMMENT>;
-					
-<suite>			::= <simple_stmt> | <NEWLINE> indent() <stmt> (level() <stmt>)* dedent();
-// insert here special suite for constructor
-<construct_suite>			::= <simple_stmt> | <NEWLINE> indent() (<cons_stmt> | <stmt>) (level() (<cons_stmt> | <stmt>))* dedent();
-//<cons_stmt>     ::= "self" "." node("FIELD", node("DECLARATOR", attribute("NAME", <NAME>)) node("DEFAULT", <S>* "=" <S>* attribute("VALUE", <test>)));
-<cons_stmt>     ::= "self" "." node("ATTRIBUTE", attribute("NAME", <NAME>) <S>* "=" <S>* attribute("DEFAULT", <test>)) <NEWLINE>;
+<SL>            ::= <WHITESPACE> | <NEWLINE>;
+<SCL>			::= <WHITESPACE> |
+					<COMMENT> |
+					<NEWLINE>;
+
+<suite>			    ::= <simple_stmt>
+                        | (<SC>* <NEWLINE>)+ indent() <stmt>
+						  ((level() <stmt>)
+							| <S>* <COMMENT> <NEWLINE>
+							| <S>* <NEWLINE>
+						  )*
+						  [dedent()];
+
+//<suite>			    ::= <simple_stmt>
+//                        | (<SC>* <NEWLINE>)+ indent() <stmt>
+//						  (level() <stmt>)*
+//						  [dedent()];
+
+<construct_suite>	::= <simple_stmt>
+                        | (<SC>* <NEWLINE>)+ indent() (<self_assignment> | <stmt>) 
+                            ( (level() (<self_assignment> | <stmt>))
+								        | <S>* <COMMENT> <NEWLINE>
+										| <S>* <NEWLINE>
+					        )*
+                           [dedent()];
+
+<self_assignment>     ::= "self" "." node("ATTRIBUTE",
+                                          attribute("NAME", <NAME> <S>*)
+										  ":" <S>*
+										  attribute("TYPE", <test>)
+										  "=" <S>* attribute("DEFAULT", <test>)
+										  
+							<SC>* <NEWLINE>);
 
 <classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
-                                                      attribute("NAME", <NAME>)
-													  ["(" [<arglist>] ")"] ":" <SC>*
+                                                      attribute("NAME", <NAME> <S>*)
+													  ["(" <S>* [<arglist>] ")" <S>*] ":" <SC>*
 									  )
 								  node("BODY", <suite>)
 					    );
 
-<construct>     ::= "def" <S>+ "__init__" <parameters> ":" <construct_suite>;
+<construct>     ::= "def" <S>+ "__init__" <S>* <construct_parameters> ":" <SC>* <construct_suite>;
 
 <funcdef>		::= node("METHOD", node("DECLARATION", "def" <S>+
-                                                       attribute("NAME", <NAME>)
-								                       <parameters> ["->" <test>] ":"
+                                                       attribute("NAME", <NAME> <S>*)
+								                       <parameters> ["->" <S>* <test>] ":" <SC>*
 								       )
 								   <suite>
 						);
 
-<arglist>		::= <argument> ("," <argument>)*  [","];
 
-<decorator>			::= "@" <dotted_name> [ "(" [<arglist>] ")" ] <NEWLINE>;
+
+<decorator>			::= "@" <S>* <dotted_name> [ "(" <S>* [<arglist>] ")" <S>* ] <NEWLINE>;
 <decorators>		::= (<decorator>)+;
 <decorated>			::= <decorators> (<classdef> | <funcdef> | <async_funcdef>);
 
 <async_funcdef>		::= <ASYNC> <funcdef>;
 
-<parameters>		::= "(" [<typedargslist>] ")";
-<typedargslist>		::= (<tfpdef> ["=" <test>] ("," <tfpdef> ["=" <test>])* ["," [
-        "*" [<tfpdef>] ("," <tfpdef> ["=" <test>])* ["," ["**" <tfpdef> [","]]]
-      | "**" <tfpdef> [","]]]
-  | "*" [<tfpdef>] ("," <tfpdef> ["=" <test>])* ["," ["**" <tfpdef> [","]]]
-  | "**" <tfpdef> [","]);
-  
-<tfpdef>			::= "self" | node("PARAMETER", attribute("NAME", <NAME>) [":" attribute("TYPE", <test>)]);
+<parameters>		::= "(" <S>* [<typedargslist>] ")" <S>*;
+<construct_parameters> ::=  "(" <S>* [<construct_typedargslist>] ")" <S>*;
 
-<varargslist>		::= (<vfpdef> ["=" <test>] ("," <vfpdef> ["=" <test>])* ["," [
-        "*" [<vfpdef>] ("," <vfpdef> ["=" <test>])* ["," ["**" <vfpdef> [","]]]
-      | "**" <vfpdef> [","]]]
-  | "*" [<vfpdef>] ("," <vfpdef> ["=" <test>])* ["," ["**" <vfpdef> [","]]]
-  | "**" <vfpdef> [","]
+<typedargslist>		::= (<S>* <tfpdef> <S>* ["=" <S>* <test> <S>*] ("," <S>* <tfpdef> <S>* ["=" <S>* <test> <S>*])* ["," <S>* [
+                         "*" <S>* [<tfpdef>] ("," <S>* <tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <tfpdef> ["," <S>*]]]
+                        | "**" <S>* <tfpdef> ["," <S>*]]]
+                        | "*" <S>* [<tfpdef>] ("," <S>* <tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <tfpdef> ["," <S>*]]]
+                        | "**" <S>* <tfpdef> ["," <S>*]);
+<construct_typedargslist>		::= (<S>* <c_tfpdef> <S>* ["=" <S>* <test> <S>*] ("," <S>* <c_tfpdef> <S>* ["=" <S>* <test> <S>*])* ["," <S>* [
+                         "*" <S>* [<c_tfpdef>] ("," <S>* <c_tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <c_tfpdef> ["," <S>*]]]
+                        | "**" <S>* <c_tfpdef> ["," <S>*]]]
+                        | "*" <S>* [<c_tfpdef>] ("," <S>* <c_tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <c_tfpdef> ["," <S>*]]]
+                        | "**" <S>* <c_tfpdef> ["," <S>*]);
+
+<tfpdef>			::= "self" <S>* | node("PARAMETER", attribute("NAME", <NAME> <S>*) [":" <S>* attribute("TYPE", <test>)]);
+//<tfpdef>			::= node("PARAMETER", attribute("NAME", <NAME> <S>*) [":" <S>* attribute("TYPE", <test>)]);
+<c_tfpdef>			::= "self" <S>* | <NAME> <S>* [":" <S>* <test>];
+
+<varargslist>		::= (<vfpdef> ["=" <S>* <test>] ("," <S>* <vfpdef> ["=" <S>* <test>])* ["," <S>* [
+        "*" <S>* [<vfpdef>] ("," <S>* <vfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <vfpdef> ["," <S>*]]]
+      | "**" <S>* <vfpdef> ["," <S>*]]]
+  | "*" <S>* [<vfpdef>] ("," <S>* <vfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <vfpdef> ["," <S>*]]]
+  | "**" <S>* <vfpdef> ["," <S>*]
 );
-<vfpdef>			::= <NAME>;
+<vfpdef>			::= <NAME> <S>* ;
 
-<stmt>				::= <S>* <COMMENT> <NEWLINE> | <simple_stmt> | <compound_stmt>;
-<simple_stmt>		::= <small_stmt> (";" <small_stmt>)* [";"] <NEWLINE>;
-<small_stmt>		::= (<expr_stmt>
+//<stmt>				::= <S>* <COMMENT> <NEWLINE> | <simple_stmt> | <compound_stmt>;
+<stmt>				::= <SC>* <NEWLINE> | <simple_stmt> | <compound_stmt>;
+<simple_stmt>		::= <small_stmt> (";" <S>* <small_stmt>)* [";"] <SC>* <NEWLINE>;
+<small_stmt>		::= (//<self_assign> |
+                         <expr_stmt>
                          | <del_stmt>
 						 | <pass_stmt>
 						 | <flow_stmt>
@@ -134,37 +173,41 @@ parse(<proceed>);
 						 | <assert_stmt>
 						);
 
+//<self_assign>       ::= node("ATTRIBUTE", "self" <S>* "." <S>* attribute("NAME", <NAME>) <S>* ":" <S>* <test> ["=" <S>* <test>]);
+
 <expr_stmt>			::= <testlist_star_expr> <S>* (<annassign> | <augassign> (<yield_expr> | <testlist>) |
                      ("=" <S>* (<yield_expr> | <testlist_star_expr>))*);
-<annassign>			::= ":" <test> ["=" <test>];
-<testlist_star_expr>		::= (<test> | <star_expr>) ("," (<test>|<star_expr>))* [","];
+<annassign>			::= ":" <S>* <test> ["=" <S>* <test>];
+
+
+<testlist_star_expr>		::= (<test> | <star_expr>) ("," <S>* (<test>|<star_expr>))* ["," <S>*];
 <augassign>			::= ("+=" | "-=" | "*=" | "@=" | "/=" | "%=" | "&=" | "|=" | "^=" |
-            "<<=" | ">>=" | "**=" | "//=");
+                        "<<=" | ">>=" | "**=" | "//=") <S>*;
 // For normal and annotated assignments, additional restrictions enforced by the interpreter
-<del_stmt>			::= "del" <exprlist>;
-<pass_stmt>			::= "pass";
+<del_stmt>			::= "del" <S>* <exprlist>;
+<pass_stmt>			::= "pass" <S>*;
 <flow_stmt>			::= <break_stmt> | <continue_stmt> | <return_stmt> | <raise_stmt> | <yield_stmt>;
-<break_stmt>		::= "break";
-<continue_stmt>		::= "continue";
-<return_stmt>		::= "return" [<testlist>];
+<break_stmt>		::= "break" <S>*;
+<continue_stmt>		::= "continue" <S>*;
+<return_stmt>		::= "return" <S>* [<testlist>];
 <yield_stmt>		::= <yield_expr>;
-<raise_stmt>		::= "raise" [<test> ["from" <test>]];
+<raise_stmt>		::= "raise" <S>* [<test> ["from" <S>* <test>]];
 <import_stmt>		::= <import_name> | <import_from>;
-<import_name>		::= "import" <dotted_as_names>;
+<import_name>		::= "import" <S>+ <dotted_as_names>;
 // note below: the ("." | "...") is necessary because "..." is tokenized as ELLIPSIS
-<import_from>		::= ("from" (("." | "...")* <dotted_name> | ("." | "...")+)
-              "import" ("*" | "(" <import_as_names> ")" | <import_as_names>));
-<import_as_name>	::= <NAME> ["as" <NAME>];
-<dotted_as_name>	::= <dotted_name> ["as" <NAME>];
-<import_as_names>	::= <import_as_name> ("," <import_as_name>)* [","];
-<dotted_as_names>	::= <dotted_as_name> ("," <dotted_as_name>)*;
-<dotted_name>		::= <NAME> ("." <NAME>)*;
+<import_from>		::= ("from" <S>+ (("." | "...")* <S>* <dotted_name> | ("." | "...")+ <S>*)
+                         "import" <S>+ ("*" <S>* | "(" <S>* <import_as_names> ")" <S>* | <import_as_names>));
+<import_as_name>	::= <NAME> <S>*  ["as" <S>+ <NAME> <S>* ];
+<dotted_as_name>	::= <dotted_name> ["as" <S>+ <NAME> <S>* ];
+<import_as_names>	::= <import_as_name> ("," <SL>* <import_as_name>)* ["," <S>*];
+<dotted_as_names>	::= <dotted_as_name> ("," <S>* <dotted_as_name>)*;
+<dotted_name>		::= <NAME> <S>*  ("." <S>* <NAME> <S>* )*;
 
-<selfed_name>       ::= "self" "." <NAME>;
+//<selfed_name>       ::= "self" <S>* "." <S>* <NAME> <S>* ;
 
-<global_stmt>		::= "global" <NAME> ("," <NAME>)*;
-<nonlocal_stmt>		::= "nonlocal" <NAME> ("," <NAME>)*;
-<assert_stmt>		::= "assert" <test> ["," <test>];
+<global_stmt>		::= "global" <S>* <NAME> <S>*  ("," <S>* <NAME> <S>* )*;
+<nonlocal_stmt>		::= "nonlocal" <S>* <NAME> <S>*  ("," <S>* <NAME> <S>* )*;
+<assert_stmt>		::= "assert" <S>* <test> ["," <S>* <test>];
 
 <compound_stmt>		::= <if_stmt>
                         | <while_stmt>
@@ -177,63 +220,68 @@ parse(<proceed>);
 						| <decorated>
 						| <async_stmt>;
 <async_stmt>		::= <ASYNC> (<funcdef> | <with_stmt> | <for_stmt>);
-<if_stmt>			::= "if" <test> ":" <suite> ("elif" <test> ":" <suite>)* ["else" ":" <suite>];
-<while_stmt>		::= "while" <test> ":" <suite> ["else" ":" <suite>];
-<for_stmt>			::= "for" <exprlist> "in" <testlist> ":" <suite> ["else" ":" <suite>];
-<try_stmt>			::= ("try" ":" <suite>
-						((<except_clause> ":" <suite>)+
-						["else" ":" <suite>]
-						["finally" ":" <suite>] |
-						"finally" ":" <suite>));
-<with_stmt>			::= "with" <with_item> ("," <with_item>)*  ":" <suite>;
-<with_item>			::= <test> ["as" <expr>];
+<if_stmt>			::= "if" <S>+ <test> ":" <S>* <suite> (level() "elif" <S>+ <test> ":" <SC>* <suite>)* [level() "else" ":" <SC>* <suite>];
+<while_stmt>		::= "while" <S>* <test> ":" <SC>* <suite> [level() "else" <S>* ":" <SC>* <suite>];
+<for_stmt>			::= "for" <S>* <exprlist> "in" <S>* <testlist> ":" <SC>* <suite> [level() "else" <S>* ":" <SC>* <suite>];
+<try_stmt>			::= ("try" <S>* ":" <SC>* <suite>
+						((<except_clause> ":" <SC>* <suite>)+
+						["else" <S>* ":" <SC>* <suite>]
+						["finally" <S>* ":" <SC>* <suite>] |
+						"finally" <S>* ":" <S>* <suite>));
+<with_stmt>			::= "with" <S>* <with_item> ("," <S>* <with_item>)*  ":" <S>* <suite>;
+<with_item>			::= <test> ["as" <S>* <expr>];
 // NB compile.c makes sure that the default except clause is last
-<except_clause>		::= "except" [<test> ["as" <NAME>]];
+<except_clause>		::= "except" <S>* [<test> ["as" <S>* <NAME> <S>* ]];
 
 
-<test>				::= <or_test> ["if" <or_test> "else" <test>] | <lambdef>;
+<test>				::= <or_test> ["if" <S>* <or_test> "else" <S>* <test>] | <lambdef>;
 <test_nocond>		::= <or_test> | <lambdef_nocond>;
-<lambdef>			::= "lambda" [<varargslist>] ":" <test>;
-<lambdef_nocond>		::= "lambda" [<varargslist>] ":" <test_nocond>;
-<or_test>			::= <and_test> ("or" <and_test>)*;
-<and_test>			::= <not_test> ("and" <not_test>)*;
-<not_test>			::= "not" <not_test> | <comparison>;
+<lambdef>			::= "lambda" <S>* [<varargslist>] ":" <S>* <test>;
+<lambdef_nocond>		::= "lambda" <S>* [<varargslist>] ":" <S>* <test_nocond>;
+<or_test>			::= <and_test> ("or" <S>* <and_test>)*;
+<and_test>			::= <not_test> ("and" <S>* <not_test>)*;
+<not_test>			::= "not" <S>* <not_test> | <comparison>;
 <comparison>		::= <expr> (<comp_op> <expr>)*;
 // <> isn"t actually a valid comparison operator in Python. It"s here for the
 // sake of a __future__ import described in PEP 401 (which really works :-)
-<comp_op>			::= "<"|">"|"=="|">="|"<="|"<>"|"!="|"in"|"not" "in"|"is"|"is" "not";
-<star_expr>			::= "*" <expr>;
-<expr>				::= <xor_expr> ("|" <xor_expr>)*;
-<xor_expr>			::= <and_expr> ("^" <and_expr>)*;
-<and_expr>			::= <shift_expr> ("&" <shift_expr>)*;
-<shift_expr>		::= <arith_expr> (("<<"|">>") <arith_expr>)*;
-<arith_expr>		::= <term> (("+"|"-") <term>)*;
-<term>				::= <factor> (("*"|"@"|"/"|"%"|"//") <factor>)*;
-<factor>			::= ("+"|"-"|"~") <factor> | <power>;
-<power>		::= <atom_expr> ["**" <factor>];
-<atom_expr>		::= [<AWAIT>] <atom> <trailer>*;
-<atom>		::= ("(" [<yield_expr> | <testlist_comp>] ")"
-                 | "[" [<testlist_comp>] "]"
-				 | "{" [<dictorsetmaker>] "}"
-				 | <selfed_name>
-				 | <NAME>
-				 | <NUMBER>
-				 | (<STRING>)+
-				 | "..."
-				 | "None"
-				 | "True"
-				 | "False");
-<testlist_comp>		::= (<test> | <star_expr>) ( <comp_for> | ("," (<test> | <star_expr>))* [","] );
-<trailer>		::= "(" [<arglist>] ")" | "[" <subscriptlist> "]" | "." <NAME>;
-<subscriptlist>		::= <subscript> ("," <subscript>)* [","];
-<subscript>		::= <test> | [<test>] ":" [<test>] [<sliceop>];
-<sliceop>		::= ":" [<test>];
-<exprlist>		::= (<expr> | <star_expr>) ("," (<expr> | <star_expr>))* [","];
-<testlist>		::= <test> ("," <test>)* [","];
-<dictorsetmaker>		::= ( ((<test> ":" <test> | "**" <expr>)
-                   (<comp_for> | ("," (<test> ":" <test> | "**" <expr>))* [","])) |
+<comp_op>			::= "<" <S>* |">" <S>* |"==" <S>* |">=" <S>* | "<=" <S>* | "<>" <S>* | "!=" <S>* | "in" <S>*
+                        | "not" <S>* "in" <S>* | "is" <S>* | "is" <S>* "not" <S>*;
+<star_expr>			::= "*" <S>* <expr>;
+<expr>				::= <xor_expr> ("|" <S>* <xor_expr>)*;
+<xor_expr>			::= <and_expr> ("^" <S>* <and_expr>)*;
+<and_expr>			::= <shift_expr> ("&" <S>* <shift_expr>)*;
+<shift_expr>		::= <arith_expr> (("<<" <S>* | ">>" <S>*) <arith_expr>)*;
+<arith_expr>		::= <term> (("+" <S>* |"-" <S>*) <term>)*;
+<term>				::= <factor> (("*" <S>* | "@" <S>* | "/" <S>* | "%" <S>* | "//" <S>*) <factor>)*;
+<factor>			::= ( "+" <S>* | "-" <S>* | "~" <S>*) <factor> | <power>;
+<power>		::= <atom_expr> ["**" <S>* <factor>];
+<atom_expr>		::= [<AWAIT>] <atom> (<SL>* <trailer>)*;
+<atom>		::= ("(" <S>* [<yield_expr> | <testlist_comp>] ")" <S>*
+                 | "[" <S>* [<testlist_comp>] "]" <S>* 
+				 | "{" <S>* [<dictorsetmaker>] "}" <S>* 
+				 | "self" <S>*
+				 | <NAME> <S>* 
+				 | <NUMBER> <S>* 
+				 | (<STRING> <S>* )+
+				 | "..." <S>* 
+				 | "None" <S>* 
+				 | "True" <S>* 
+				 | "False" <S>*);
+<testlist_comp>		::= (<test> | <star_expr>) ( <comp_for> | ("," <SCL>* (<test> | <star_expr>))* ["," <SCL>*] );
+<trailer>		::= "(" <SL>* [<arglist>] ")" <S>*
+                    | "[" <SL>* <subscriptlist> "]" <S>*
+					| "." <S>* <NAME> <S>* ;
+
+<arglist>		::= <argument> ("," <SCL>* <argument>)*  [("," | <SCL>*)];
+<subscriptlist>		::= <subscript> ("," <SCL>* <subscript>)* [("," | <SCL>*)];
+<subscript>		::= <test> | [<test>] ":" <S>* [<test>] [<sliceop>];
+<sliceop>		::= ":" <S>* [<test>];
+<exprlist>		::= (<expr> | <star_expr>) ("," <S>* (<expr> | <star_expr>))* ["," <S>*];
+<testlist>		::= <test> ("," <S>* <test>)* ["," <S>*];
+<dictorsetmaker>		::= ( ((<test> ":" <S>* <test> | "**" <S>* <expr>)
+                   (<comp_for> | ("," <S>* (<test> ":" <S>* <test> | "**" <S>* <expr>))* ["," <S>*])) |
                   ((<test> | <star_expr>)
-                   (<comp_for> | ("," (<test> | <star_expr>))* [","])) );
+                   (<comp_for> | ("," <S>* (<test> | <star_expr>))* ["," <S>*])) );
 
 
 
@@ -246,18 +294,17 @@ parse(<proceed>);
 // Illegal combinations and orderings are blocked in ast.c:
 // multiple (test comp_for) arguments are blocked; keyword unpackings
 // that precede iterable unpackings are blocked; etc.
-<argument>		::= ( <test> [<comp_for>] |
-            <test> "=" <test> |
-            "**" <test> |
-            "*" <test> );
+<argument>		::= <test> [(<comp_for> | "=" <S>* <test>)]
+					| ("**" | "*") <S>* <test>;
+//					| ("*" <S>* <test>);
 
 <comp_iter>		::= <comp_for> | <comp_if>;
-<comp_for>		::= [<ASYNC>] "for" <exprlist> "in" <or_test> [<comp_iter>];
-<comp_if>		::= "if" <test_nocond> [<comp_iter>];
+<comp_for>		::= [<ASYNC>] "for" <S>* <exprlist> "in" <S>* <or_test> [<comp_iter>];
+<comp_if>		::= "if" <S>* <test_nocond> [<comp_iter>];
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
 //<encoding_decl>		::= <NAME>;
 
-<yield_expr>		::= "yield" [<yield_arg>];
-<yield_arg>		::= "from" <test> | <testlist>;
+<yield_expr>		::= "yield" <S>* [<yield_arg>];
+<yield_arg>		::= "from" <S>* <test> | <testlist>;
 ]]></CodeOption></CodeOptions></CodeModule></CodeModules></MDG.Technology>

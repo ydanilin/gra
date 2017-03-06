@@ -87,6 +87,11 @@ parse(<proceed>, <languageEscape>);
 						  )*
 						  [dedent()];
 
+//<suite>			    ::= <simple_stmt>
+//                        | (<SC>* <NEWLINE>)+ indent() <stmt>
+//						  (level() <stmt>)*
+//						  [dedent()];
+
 <construct_suite>	::= <simple_stmt>
                         | (<SC>* <NEWLINE>)+ indent() (<self_assignment> | <stmt>) 
                             ( (level() (<self_assignment> | <stmt>))
@@ -100,8 +105,8 @@ parse(<proceed>, <languageEscape>);
 										  ":" <S>*
 										  attribute("TYPE", <test>)
 										  "=" <S>* attribute("DEFAULT", <test>)
-										  )
-							<NEWLINE>;
+										  
+							<SC>* <NEWLINE>);
 
 <classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
                                                       attribute("NAME", <NAME> <S>*)
@@ -142,6 +147,7 @@ parse(<proceed>, <languageEscape>);
                         | "**" <S>* <c_tfpdef> ["," <S>*]);
 
 <tfpdef>			::= "self" <S>* | node("PARAMETER", attribute("NAME", <NAME> <S>*) [":" <S>* attribute("TYPE", <test>)]);
+//<tfpdef>			::= node("PARAMETER", attribute("NAME", <NAME> <S>*) [":" <S>* attribute("TYPE", <test>)]);
 <c_tfpdef>			::= "self" <S>* | <NAME> <S>* [":" <S>* <test>];
 
 <varargslist>		::= (<vfpdef> ["=" <S>* <test>] ("," <S>* <vfpdef> ["=" <S>* <test>])* ["," <S>* [
@@ -152,9 +158,11 @@ parse(<proceed>, <languageEscape>);
 );
 <vfpdef>			::= <NAME> <S>* ;
 
-<stmt>				::= <S>* <COMMENT> <NEWLINE> | <simple_stmt> | <compound_stmt>;
+//<stmt>				::= <S>* <COMMENT> <NEWLINE> | <simple_stmt> | <compound_stmt>;
+<stmt>				::= <SC>* <NEWLINE> | <simple_stmt> | <compound_stmt>;
 <simple_stmt>		::= <small_stmt> (";" <S>* <small_stmt>)* [";"] <SC>* <NEWLINE>;
-<small_stmt>		::= (<expr_stmt>
+<small_stmt>		::= (//<self_assign> |
+                         <expr_stmt>
                          | <del_stmt>
 						 | <pass_stmt>
 						 | <flow_stmt>
@@ -164,9 +172,13 @@ parse(<proceed>, <languageEscape>);
 						 | <assert_stmt>
 						);
 
+//<self_assign>       ::= node("ATTRIBUTE", "self" <S>* "." <S>* attribute("NAME", <NAME>) <S>* ":" <S>* <test> ["=" <S>* <test>]);
+
 <expr_stmt>			::= <testlist_star_expr> <S>* (<annassign> | <augassign> (<yield_expr> | <testlist>) |
                      ("=" <S>* (<yield_expr> | <testlist_star_expr>))*);
 <annassign>			::= ":" <S>* <test> ["=" <S>* <test>];
+
+
 <testlist_star_expr>		::= (<test> | <star_expr>) ("," <S>* (<test>|<star_expr>))* ["," <S>*];
 <augassign>			::= ("+=" | "-=" | "*=" | "@=" | "/=" | "%=" | "&=" | "|=" | "^=" |
                         "<<=" | ">>=" | "**=" | "//=") <S>*;
@@ -246,7 +258,7 @@ parse(<proceed>, <languageEscape>);
 <atom>		::= ("(" <S>* [<yield_expr> | <testlist_comp>] ")" <S>*
                  | "[" <S>* [<testlist_comp>] "]" <S>* 
 				 | "{" <S>* [<dictorsetmaker>] "}" <S>* 
-				 //| <selfed_name>
+				 | "self" <S>*
 				 | <NAME> <S>* 
 				 | <NUMBER> <S>* 
 				 | (<STRING> <S>* )+
