@@ -54,19 +54,6 @@ class DBMS:
 
     # **********************************
     # Public interface functions
-    def addNode(self, parent:int):
-        """supply parent = None to add root label"""
-        # internal names
-        # x - new node label; y - parent to attach to
-        self.lastLabel += 1
-        x = self.lastLabel
-        # add to t_data
-        if parent:
-            y = parent
-        else:
-            y = x  # this means we're adding root node
-        self.addLeafNode(x, y)
-        return x
 
     def deleteNode(self, node):
         self.deleteLeafNode(node)
@@ -75,7 +62,7 @@ class DBMS:
         self.deleteLeafNode(node)
         self.addLeafNode(node, moveTo)
 
-    def insertNode(self, insertBefore):
+    def insertHujNode(insertBefore):
         y = self.retrieveParent(insertBefore)
         self.lastLabel += 1
         x = self.lastLabel
@@ -256,4 +243,5 @@ class DBMS:
         parent = self.connection.execute(
             select([self.t_data.c.parent]).where(self.t_data.c.node == node)
         ).first()[0]
-        return parent
+        return parentdef insertHuj(huj):
+        pass
