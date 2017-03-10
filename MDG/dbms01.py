@@ -12,12 +12,13 @@ class DBMS:
     """ DJHUJ!!!
 """
     def __init__(self, database:str=None):
+        self.puk:str = 'djhuj'
+
+        self.hujhuj:int = 33
         if database:
             address = 'sqlite:///' + database
         else:
             address = 'sqlite://'
-        self.puk:str = 'djhuj' # ty - HUJ!!!
-        self.engine = create_engine(address)
         self.connection = self.engine.connect()
         self.metadata = MetaData()
 
@@ -62,7 +63,7 @@ class DBMS:
         self.deleteLeafNode(node)
         self.addLeafNode(node, moveTo)
 
-    def insertHujNode(insertBefore):
+    def insertNode(insertBefore):
         y = self.retrieveParent(insertBefore)
         self.lastLabel += 1
         x = self.lastLabel
@@ -243,5 +244,4 @@ class DBMS:
         parent = self.connection.execute(
             select([self.t_data.c.parent]).where(self.t_data.c.node == node)
         ).first()[0]
-        return parentdef insertHuj(huj):
-        pass
+        return parent
