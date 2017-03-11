@@ -103,10 +103,10 @@ parse(<proceed>, <languageEscape>);
 <self_assignment>     ::= "self" "." node("ATTRIBUTE",
                                           attribute("NAME", <NAME> <S>*)
 										  ":" <S>*
-										  attribute("TYPE", <test>)
+										  attribute("TYPE", <NAME>) <S>*
 										  "=" <S>* attribute("DEFAULT", <test>)
-										  
-							<SC>* <NEWLINE>);
+										  )
+							<SC>* <NEWLINE>;
 
 <classdef>		::= node("CLASS", node("DECLARATION", "class" <S>+ 
                                                       attribute("NAME", <NAME> <S>*)

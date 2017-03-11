@@ -13,8 +13,8 @@ class DBMS:
 """
     def __init__(self, database:str=None):
         self.puk:str = 'djhuj'
+        self.hujhujbla:int  = 33
 
-        self.hujhuj:int = 33
         if database:
             address = 'sqlite:///' + database
         else:
