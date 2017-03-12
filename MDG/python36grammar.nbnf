@@ -126,7 +126,7 @@ parse(<proceed>, <languageEscape>);
 
 
 
-<decorator>			::= "@" <S>* <dotted_name> [ "(" <S>* [<arglist>] ")" <S>* ] <NEWLINE>;
+<decorator>			::= "@" <S>* <dotted_name> [ "(" <S>* [<arglist>] ")" <S>* ] <NEWLINE> level();
 <decorators>		::= (<decorator>)+;
 <decorated>			::= <decorators> (<classdef> | <funcdef> | <async_funcdef>);
 
@@ -135,18 +135,33 @@ parse(<proceed>, <languageEscape>);
 <parameters>		::= "(" <S>* [<typedargslist>] ")" <S>*;
 <construct_parameters> ::=  "(" <S>* [<construct_typedargslist>] ")" <S>*;
 
-<typedargslist>		::= (<S>* <tfpdef> <S>* ["=" <S>* <test> <S>*] ("," <S>* <tfpdef> <S>* ["=" <S>* <test> <S>*])* ["," <S>* [
-                         "*" <S>* [<tfpdef>] ("," <S>* <tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <tfpdef> ["," <S>*]]]
+<typedargslist>		::= (<S>* <tfpdef_assigned> ("," <S>* <tfpdef_assigned>)* ["," <S>* [
+                         "*" <S>* [<tfpdef>] ("," <S>* <tfpdef_assigned>)* ["," <S>* ["**" <S>* <tfpdef> ["," <S>*]]]
                         | "**" <S>* <tfpdef> ["," <S>*]]]
-                        | "*" <S>* [<tfpdef>] ("," <S>* <tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <tfpdef> ["," <S>*]]]
+                        | "*" <S>* [<tfpdef>] ("," <S>* <tfpdef_assigned>)* ["," <S>* ["**" <S>* <tfpdef> ["," <S>*]]]
                         | "**" <S>* <tfpdef> ["," <S>*]);
+
+
+
 <construct_typedargslist>		::= (<S>* <c_tfpdef> <S>* ["=" <S>* <test> <S>*] ("," <S>* <c_tfpdef> <S>* ["=" <S>* <test> <S>*])* ["," <S>* [
                          "*" <S>* [<c_tfpdef>] ("," <S>* <c_tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <c_tfpdef> ["," <S>*]]]
                         | "**" <S>* <c_tfpdef> ["," <S>*]]]
                         | "*" <S>* [<c_tfpdef>] ("," <S>* <c_tfpdef> ["=" <S>* <test>])* ["," <S>* ["**" <S>* <c_tfpdef> ["," <S>*]]]
                         | "**" <S>* <c_tfpdef> ["," <S>*]);
 
-<tfpdef>			::= "self" <S>* | node("PARAMETER", attribute("NAME", <NAME> <S>*) [":" <S>* attribute("TYPE", <test>)]);
+<tfpdef>			::= "self" <S>*
+						| node("PARAMETER", attribute("NAME", <NAME> <S>*)
+						       [":" <S>* attribute("TYPE", <test>)]
+							  );
+
+<tfpdef_assigned>	::= "self" <S>*
+						| node("PARAMETER", attribute("NAME", <NAME> <S>*)
+						       [":" <S>* attribute("TYPE", <test>)]
+							   <S>* [<argdefault>]
+							  );
+
+<argdefault>        ::= "=" <S>* attribute("DEFAULT", <test>) <S>*;
+
 //<tfpdef>			::= node("PARAMETER", attribute("NAME", <NAME> <S>*) [":" <S>* attribute("TYPE", <test>)]);
 <c_tfpdef>			::= "self" <S>* | <NAME> <S>* [":" <S>* <test>];
 
@@ -255,8 +270,8 @@ parse(<proceed>, <languageEscape>);
 <factor>			::= ( "+" <S>* | "-" <S>* | "~" <S>*) <factor> | <power>;
 <power>		::= <atom_expr> ["**" <S>* <factor>];
 <atom_expr>		::= [<AWAIT>] <atom> (<SL>* <trailer>)*;
-<atom>		::= ("(" <S>* [<yield_expr> | <testlist_comp>] ")" <S>*
-                 | "[" <S>* [<testlist_comp>] "]" <S>* 
+<atom>		::= ("(" <S>* [(<yield_expr> | <testlist_comp>)] <S>* ")" <S>*
+                 | "[" <S>* [<testlist_comp>] <SL>* "]" <S>* 
 				 | "{" <S>* [<dictorsetmaker>] "}" <S>* 
 				 | "self" <S>*
 				 | <NAME> <S>* 
@@ -267,9 +282,11 @@ parse(<proceed>, <languageEscape>);
 				 | "True" <S>* 
 				 | "False" <S>*);
 <testlist_comp>		::= (<test> | <star_expr>) ( <comp_for> | ("," <SCL>* (<test> | <star_expr>))* ["," <SCL>*] );
-<trailer>		::= "(" <SL>* [<arglist>] ")" <S>*
-                    | "[" <SL>* <subscriptlist> "]" <S>*
-					| "." <S>* <NAME> <S>* ;
+<trailer>		::= "(" <SL>* [<arglist>] <SCL>* ")" <SC>*
+                    | "[" <SL>* <subscriptlist> <S>* "]" <S>*
+					| "." <S>* <NAME> <S>*
+					| "." <S>* "__init__" <S>*   //this is for super().__init__
+					;
 
 <arglist>		::= <argument> ("," <SCL>* <argument>)*  [("," | <SCL>*)];
 <subscriptlist>		::= <subscript> ("," <SCL>* <subscript>)* [("," | <SCL>*)];

@@ -16,7 +16,7 @@ class HUJ2:
         self.pizdets:str = 'alert'
         self.pizdar:object = None
 
-    def liquidatePizdets(self, pi:dict=55):
+    def liquidatePizdets(self, pi:dict=57):
         pass
 
     def insertHuecheck(self, huek:dict):
