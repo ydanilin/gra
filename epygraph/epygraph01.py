@@ -4,11 +4,11 @@ import epygraph.gvzpassage as gps
 
 class Epygraph:
     def __init__(self):
-        self.name = 'Untitled'
-        self.directed = True
-        self.nodesDefaultShape = 'circle'
-        self.graphPtr = None
-        self.nodePtrs = {}
+        self.name:str = 'Untitled'
+        self.directed:bool = True
+        self.nodesDefaultShape:str = 'circle'
+        self.graphPtr:object = None
+        self.nodePtrs:dict = {}
 
     def newGraph(self, nodes):
         if self.graphPtr:

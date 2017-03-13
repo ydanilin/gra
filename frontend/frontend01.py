@@ -3,14 +3,14 @@
 
 class FrontEnd:
     def __init__(self, dbms, gviz):
-        self.dbms = dbms
-        self.gviz = gviz
-        self.graph = []
-        self.boundingBox = {}
-        self.columns = 2
-        self.nodesCount = 0
-        self.redrawState = True
-        self.tPath = []
+        self.dbms:object = dbms
+        self.gviz:object = gviz
+        self.graph:list = []
+        self.boundingBox:dict = {}
+        self.columns:int = 2
+        self.nodesCount:int = 0
+        self.redrawState:bool = True
+        self.tPath:list = []
         self.tPathCount = 0
 
     def setRedrawState(self, state):

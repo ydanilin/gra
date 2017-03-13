@@ -9,6 +9,9 @@ from .gramodel import GraModel
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
+        self.app:object = None
+        self.dataView:object = None
+        self.pathView:object = None
         self.app = QCoreApplication.instance()
         self.setWindowTitle('Basic Drawing')
         # central widget and main layout
@@ -37,7 +40,7 @@ class MainWindow(QMainWindow):
 class graWidget(QGraphicsView):
     def __init__(self, app, parent=None):
         super(graWidget, self).__init__(parent)
-        self.app = app
+        self.app:object = app
         self.setScene(GraScene())
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
@@ -49,7 +52,7 @@ class graWidget(QGraphicsView):
 
 class TDataTableGrid(QTableView):
     def __init__(self, app, parent=None):
-        self.app = app
+        self.app:object = app
         super(TDataTableGrid, self).__init__(parent)
         model = GraModel(self.app.t_dataWidgetData, self.app.t_dataDimension)
         self.setModel(model)
@@ -65,7 +68,7 @@ class TDataTableGrid(QTableView):
 
 class TPathTableGrid(QTableView):
     def __init__(self, app, parent=None):
-        self.app = app
+        self.app:object = app
         super(TPathTableGrid, self).__init__(parent)
         model = GraModel(self.app.t_pathWidgetData, self.app.t_pathDimension)
         self.setModel(model)

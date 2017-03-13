@@ -6,8 +6,8 @@ from PyQt5.QtCore import QAbstractTableModel
 class GraModel(QAbstractTableModel):
     def __init__(self, dataProc, dimProc):
         super(GraModel, self).__init__()
-        self.dataProc = dataProc
-        self.dimProc = dimProc
+        self.dataProc:callable = dataProc
+        self.dimProc:callable = dimProc
 
     def rowCount(self, parent):
         return self.dimProc(1)

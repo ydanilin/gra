@@ -6,10 +6,10 @@ from PyQt5.QtGui import QPen, QColor
 class NodeShape(QGraphicsEllipseItem):
     def __init__(self, x, y, width, height, label):
         super(NodeShape, self).__init__(x, y, width, height)
-        self.label = label
+        self.label:int = label
+        self.oldpen:object = None
+        self.oldTextColor:object = None
         self.setAcceptHoverEvents(True)
-        self.oldpen = None
-        self.oldTextColor = None
 
     def hoverEnterEvent(self, event):
         color = QColor('red')

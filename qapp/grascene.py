@@ -8,7 +8,7 @@ class GraScene(QGraphicsScene):
     def __init__(self):
         super(GraScene, self).__init__()
 
-    def drawScene(self, graphData):
+    def drawScene(self, graphData:list):
         nodes = graphData[0]
         boundingBox = graphData[1]
         self.clear()

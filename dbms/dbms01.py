@@ -10,6 +10,7 @@ from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
 # inspector.get_columns('book')
 class DBMS:
     def __init__(self, database=None):
+        self.lastLabel:int = 0
         if database:
             address = 'sqlite:///' + database
         else:
@@ -30,7 +31,6 @@ class DBMS:
                             #                  name='path_entry')
                             )
         self.metadata.create_all(self.engine)
-        self.lastLabel = 0
 
     def listDataTable(self):
         nodes = []
@@ -51,28 +51,28 @@ class DBMS:
 
     # **********************************
     # Public interface functions
-    def addNode(self, parent):
+    def addNode(self, attachTo:int = 0):
         """supply parent = None to add root label"""
         # internal names
         # x - new node label; y - parent to attach to
         self.lastLabel += 1
         x = self.lastLabel
         # add to t_data
-        if parent:
-            y = parent
+        if attachTo:
+            y = attachTo
         else:
             y = x  # this means we're adding root node
         self.addLeafNode(x, y)
         return x
 
-    def deleteNode(self, node):
+    def deleteNode(self, node:int):
         self.deleteLeafNode(node)
 
-    def moveNode(self, node, moveTo):
+    def moveNode(self, node:int, moveTo:int):
         self.deleteLeafNode(node)
         self.addLeafNode(node, moveTo)
 
-    def insertNode(self, insertBefore):
+    def insertNode(self, insertBefore:int):
         y = self.retrieveParent(insertBefore)
         self.lastLabel += 1
         x = self.lastLabel
@@ -80,18 +80,18 @@ class DBMS:
         self.moveSubtree1(insertBefore, x)
         return x
 
-    def removeNode(self, node):
+    def removeNode(self, node:int):
         y = self.retrieveParent(node)
         self.deleteLeafNode(node)
         self.branchUpSubtree(node, y)
 
-    def deleteSubtree(self, node):
-        self.deleteLeafNode(node)
-        self.wipeOffSubtree(node)
+    def deleteSubtree(self, atNode:int):
+        self.deleteLeafNode(atNode)
+        self.wipeOffSubtree(atNnode)
 
     # ***********************************
     # Internal functions
-    def addLeafNode(self, x, y):
+    def addLeafNode(self, x:int, y:int):
         """supply parent = None to add root label"""
         addToData = self.t_data.insert().values((x, y))
         self.connection.execute(addToData)
@@ -118,7 +118,7 @@ class DBMS:
                 ['node', 'ancestor'], subset)
             self.connection.execute(addToPath)
 
-    def deleteLeafNode(self, x):
+    def deleteLeafNode(self, x:int):
         if x == self.lastLabel:
             self.lastLabel -= 1
         delFromData = self.t_data.delete().where(self.t_data.c.node == x)
@@ -127,7 +127,7 @@ class DBMS:
         self.connection.execute(delFromData)
         self.connection.execute(delFromPath)
 
-    def branchUpSubtree(self, x, y):
+    def branchUpSubtree(self, x:int, y:int):
         """x = nodeToDelete, y = newParent"""
         updData = update(self.t_data).where(
             self.t_data.c.parent == x).values(parent=y)
@@ -135,7 +135,7 @@ class DBMS:
         self.connection.execute(updData)
         self.connection.execute(delFromPath)
 
-    def wipeOffSubtree(self, x):
+    def wipeOffSubtree(self, x:int):
         node = self.t_path.c.node
         ancestor = self.t_path.c.ancestor
         subtree = select([node]).where(ancestor == x)
@@ -144,7 +144,7 @@ class DBMS:
         self.connection.execute(delFromPath)
         self.connection.execute(delFromData)
 
-    def moveSubtree(self, label, moveTo):
+    def moveSubtree(self, label:int, moveTo:int):
         x = label
         y = moveTo
         # update t_data
@@ -193,7 +193,7 @@ class DBMS:
         print(str(addToPath))
         self.connection.execute(addToPath)
 
-    def moveSubtree1(self, label, moveTo):
+    def moveSubtree1(self, label:int, moveTo:int):
         # update t_data
         upd = update(self.t_data).where(self.t_data.c.node == label).values(
             parent=moveTo)
@@ -249,7 +249,7 @@ class DBMS:
 # TODO: sorting in add_node
 # TODO: rewrite insertion based on this
 
-    def retrieveParent(self, node):
+    def retrieveParent(self, node:int):
         parent = self.connection.execute(
             select([self.t_data.c.parent]).where(self.t_data.c.node == node)
         ).first()[0]
