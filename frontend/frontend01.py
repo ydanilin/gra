@@ -3,14 +3,14 @@
 
 class FrontEnd:
     def __init__(self, dbms, gviz):
-        self.dbms:object = dbms
-        self.gviz:object = gviz
-        self.graph:list = []
-        self.boundingBox:dict = {}
-        self.columns:int = 2
-        self.nodesCount:int = 0
-        self.redrawState:bool = True
-        self.tPath:list = []
+        self.dbms: object = dbms
+        self.gviz: object = gviz
+        self.graph: list = []
+        self.boundingBox: dict = {}
+        self.columns: int = 2
+        self.nodesCount: int = 0
+        self.redrawState: bool = True
+        self.tPath: list = []
         self.tPathCount = 0
 
     def setRedrawState(self, state):
@@ -36,9 +36,9 @@ class FrontEnd:
         self.boundingBox = self.gviz.makeLayout()
         self.gviz.getGeometry(self.graph)
 
-    def addChildNode(self, parent):
+    def addChildNode(self, parent: int):
         # DB operations
-        self.dbms.addLeafNode(parent)
+        self.dbms.addNode(parent)
         self.graph = self.dbms.listDataTable()
         self.nodesCount = len(self.graph)
         self.tPath = self.dbms.listPathTable()
@@ -51,7 +51,7 @@ class FrontEnd:
         else:
             print('not implemented')
 
-    def deleteLeafNode(self, node):
+    def deleteLeafNode(self, node: int):
         # DB operations
         atWhichParent = self.dbms.deleteLeafNode(node)  # ret val needed if no
         self.graph = self.dbms.listDataTable()          # redraw

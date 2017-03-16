@@ -1,9 +1,6 @@
 # coding=utf-8
 import unittest
-from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
-                        UniqueConstraint, select)
-from dbms.dbms01 import DBMS
-from pprint import pprint
+from dbms import DBMS
 
 
 class DBMS_Test01(unittest.TestCase):
@@ -14,7 +11,7 @@ class DBMS_Test01(unittest.TestCase):
     def test_01addNode_Root(self):
         tOutput = [{'node': 1, 'parent': 1}]
         self.assertEqual(self.dbms.lastLabel, 0)
-        self.dbms.addNode(None)
+        self.dbms.addNode()
         res = self.dbms.listDataTable()
         self.assertEqual(self.dbms.lastLabel, 1)
         self.assertEqual(res, tOutput)
@@ -93,7 +90,7 @@ class DBMS_Test02(unittest.TestCase):
         cls.dbms = DBMS()
 
     def test_01addNodes(self):
-        self.dbms.addNode(None)
+        self.dbms.addNode()
         self.dbms.addNode(1)
         self.dbms.addNode(2)
         self.dbms.addNode(2)
@@ -145,7 +142,7 @@ class DBMS_Test03(unittest.TestCase):
         cls.dbms = DBMS()
 
     def test_01addNodes(self):
-        self.dbms.addNode(None)
+        self.dbms.addNode()
         self.dbms.addNode(1)
         self.dbms.addNode(2)
         self.dbms.addNode(2)
@@ -169,7 +166,7 @@ class DBMS_Test03(unittest.TestCase):
                         {'node': 6, 'parent': 1},
                         {'node': 7, 'parent': 6},
                         {'node': 8, 'parent': 6},
-                        {'node': 9, 'parent': 6},]
+                        {'node': 9, 'parent': 6}]
         t_pathOutput = [(3, 2),
                         (4, 2),
                         (5, 2),
@@ -233,7 +230,7 @@ class DBMS_Test04(unittest.TestCase):
                         (7, 1),
                         (8, 6),
                         (8, 1)]
-        self.dbms.addNode(None)
+        self.dbms.addNode()
         self.dbms.addNode(1)
         self.dbms.addNode(2)
         self.dbms.addNode(2)

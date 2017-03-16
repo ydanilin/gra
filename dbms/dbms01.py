@@ -10,7 +10,7 @@ from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
 # inspector.get_columns('book')
 class DBMS:
     def __init__(self, database=None):
-        self.lastLabel:int = 0
+        self.lastLabel: int = 0
         if database:
             address = 'sqlite:///' + database
         else:
@@ -31,6 +31,9 @@ class DBMS:
                             #                  name='path_entry')
                             )
         self.metadata.create_all(self.engine)
+        nodes = self.listDataTable()
+        if nodes:
+            self.lastLabel = nodes[-1]['node']
 
     def listDataTable(self):
         nodes = []
@@ -51,7 +54,7 @@ class DBMS:
 
     # **********************************
     # Public interface functions
-    def addNode(self, attachTo:int = 0):
+    def addNode(self, attachTo: int = 0):
         """supply parent = None to add root label"""
         # internal names
         # x - new node label; y - parent to attach to
@@ -87,12 +90,11 @@ class DBMS:
 
     def deleteSubtree(self, atNode:int):
         self.deleteLeafNode(atNode)
-        self.wipeOffSubtree(atNnode)
+        self.wipeOffSubtree(atNode)
 
     # ***********************************
     # Internal functions
-    def addLeafNode(self, x:int, y:int):
-        """supply parent = None to add root label"""
+    def addLeafNode(self, x: int, y: int):
         addToData = self.t_data.insert().values((x, y))
         self.connection.execute(addToData)
         # add to t_path

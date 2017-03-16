@@ -11,9 +11,9 @@ class QApp(QApplication):
 
     def __init__(self, argv, frontend):
         super(QApp, self).__init__(argv)
+        self.frontEnd: object = frontend
         self.initGraphEvent()
-        self.frontEnd:object = frontend
-        self.mainwindow:object = MainWindow()
+        self.mainwindow: object = MainWindow()
 
     # event handlers
     def initGraphEvent(self):
@@ -23,18 +23,18 @@ class QApp(QApplication):
         # self.frontEnd.setNodesDefaultShape('circle')
         self.frontEnd.loadGraph()
 
-    def addChildNodeEvent(self, parent:int):
+    def addChildNodeEvent(self, parent: int):
         self.frontEnd.addChildNode(parent)
         # emit model changed
         self.modelChanged.emit()
 
-    def deleteLeafNodeEvent(self, label:int):
+    def deleteLeafNodeEvent(self, label: int):
         self.frontEnd.deleteLeafNode(label)
         # emit model changed
         self.modelChanged.emit()
 
     # service functions for context menu events
-    def hasChildren(self, label:int):
+    def hasChildren(self, label: int):
         return self.frontEnd.hasChildren(label)
 
     # datafeeds for widgets

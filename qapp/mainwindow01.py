@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
 class graWidget(QGraphicsView):
     def __init__(self, app, parent=None):
         super(graWidget, self).__init__(parent)
-        self.app:object = app
+        self.app: object = app
         self.setScene(GraScene())
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
