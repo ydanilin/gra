@@ -12,6 +12,7 @@ class MainWindow(QMainWindow):
         self.app:object = None
         self.dataView:object = None
         self.pathView:object = None
+
         self.app = QCoreApplication.instance()
         self.setWindowTitle('Basic Drawing')
         # central widget and main layout
@@ -44,6 +45,10 @@ class graWidget(QGraphicsView):
         self.setScene(GraScene())
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
+        self.app.doRedraw.connect(self.redraw)
+        # self.scene().drawScene(self.app.sceneWidgetData())
+
+    def redraw(self):
         self.scene().drawScene(self.app.sceneWidgetData())
 
     def sizeHint(self):
@@ -52,7 +57,7 @@ class graWidget(QGraphicsView):
 
 class TDataTableGrid(QTableView):
     def __init__(self, app, parent=None):
-        self.app:object = app
+        self.app: object = app
         super(TDataTableGrid, self).__init__(parent)
         model = GraModel(self.app.t_dataWidgetData, self.app.t_dataDimension)
         self.setModel(model)

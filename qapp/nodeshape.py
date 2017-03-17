@@ -46,9 +46,9 @@ class NodeShape(QGraphicsEllipseItem):
     def addChildNode(self):
         app = self.scene().views()[0].app
         app.addChildNodeEvent(self.label)
-        self.scene().drawScene(app.sceneWidgetData())
+        # self.scene().drawScene(app.sceneWidgetData())
 
     def deleteLeafNode(self):
         app = self.scene().views()[0].app
         app.deleteLeafNodeEvent(self.label)
-        self.scene().drawScene(app.sceneWidgetData())
+        # self.scene().drawScene(app.sceneWidgetData())

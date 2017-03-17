@@ -5,8 +5,7 @@ class FrontEnd:
     def __init__(self, dbms, gviz):
         self.dbms: object = dbms
         self.gviz: object = gviz
-        self.graph: list = []
-        self.boundingBox: dict = {}
+        self.graphData:dict = {}
         self.columns: int = 2
         self.nodesCount: int = 0
         self.redrawState: bool = True
@@ -25,46 +24,29 @@ class FrontEnd:
     def setNodesDefaultShape(self, shape):
         self.gviz.nodesDefaultShape = shape
 
-    def loadGraph(self):
+    def loadGraph(self, forceRedraw):
         # DB operations
-        self.graph = self.dbms.listDataTable()
-        self.nodesCount = len(self.graph)
+        self.graphData['nodes'] = self.dbms.listDataTable()
+        self.nodesCount = len(self.graphData['nodes'])
         self.tPath = self.dbms.listPathTable()
         self.tPathCount = len(self.tPath)
         # Gviz operations
-        self.gviz.newGraph(self.graph)
-        self.boundingBox = self.gviz.makeLayout()
-        self.gviz.getGeometry(self.graph)
+        if forceRedraw:
+            self.gviz.newGraph(self.graphData['nodes'])
+            self.graphData['boundingBox'] = self.gviz.makeLayout()
+            self.gviz.getGeometry(self.graphData['nodes'])
+        else:
+            print('not implemented')
 
     def addChildNode(self, parent: int):
         # DB operations
         self.dbms.addNode(parent)
-        self.graph = self.dbms.listDataTable()
-        self.nodesCount = len(self.graph)
-        self.tPath = self.dbms.listPathTable()
-        self.tPathCount = len(self.tPath)
-        # Gviz operations
-        if self.redrawState:
-            self.gviz.newGraph(self.graph)
-            self.boundingBox = self.gviz.makeLayout()
-            self.gviz.getGeometry(self.graph)
-        else:
-            print('not implemented')
+        self.loadGraph(self.redrawState)
 
     def deleteLeafNode(self, node: int):
         # DB operations
         atWhichParent = self.dbms.deleteLeafNode(node)  # ret val needed if no
-        self.graph = self.dbms.listDataTable()          # redraw
-        self.nodesCount = len(self.graph)
-        self.tPath = self.dbms.listPathTable()
-        self.tPathCount = len(self.tPath)
-        # Gviz operations
-        if self.redrawState:
-            self.gviz.newGraph(self.graph)
-            self.boundingBox = self.gviz.makeLayout()
-            self.gviz.getGeometry(self.graph)
-        else:
-            print('not implemented')
+        self.loadGraph(self.redrawState)
 
     # service functions for context menu events
     def hasChildren(self, label):
@@ -83,7 +65,7 @@ class FrontEnd:
             col = 'node'
         if column == 1:
             col = 'parent'
-        return self.graph[row][col]
+        return self.graphData['nodes'][row][col]
 
     def t_dataDimension(self, whichDimension):
         output = None

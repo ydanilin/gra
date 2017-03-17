@@ -8,12 +8,14 @@ from .gramodel import GraModel
 class QApp(QApplication):
 
     modelChanged = pyqtSignal()
+    doRedraw = pyqtSignal()
 
     def __init__(self, argv, frontend):
         super(QApp, self).__init__(argv)
         self.frontEnd: object = frontend
         self.initGraphEvent()
         self.mainwindow: object = MainWindow()
+        self.doRedraw.emit()
 
     # event handlers
     def initGraphEvent(self):
@@ -21,17 +23,21 @@ class QApp(QApplication):
         # self.frontEnd.setGraphName(name)
         # self.frontEnd.setDirected(directed)
         # self.frontEnd.setNodesDefaultShape('circle')
-        self.frontEnd.loadGraph()
+        self.frontEnd.loadGraph(True)
+        self.modelChanged.emit()
+        # self.doRedraw.emit()
 
     def addChildNodeEvent(self, parent: int):
         self.frontEnd.addChildNode(parent)
         # emit model changed
         self.modelChanged.emit()
+        self.doRedraw.emit()
 
     def deleteLeafNodeEvent(self, label: int):
         self.frontEnd.deleteLeafNode(label)
         # emit model changed
         self.modelChanged.emit()
+        self.doRedraw.emit()
 
     # service functions for context menu events
     def hasChildren(self, label: int):
@@ -39,7 +45,7 @@ class QApp(QApplication):
 
     # datafeeds for widgets
     def sceneWidgetData(self):
-        return self.frontEnd.graph, self.frontEnd.boundingBox
+        return self.frontEnd.graphData['nodes'], self.frontEnd.graphData['boundingBox']
 
     def t_dataWidgetData(self, row, column):
         return self.frontEnd.t_dataData(row, column)
