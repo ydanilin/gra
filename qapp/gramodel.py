@@ -6,8 +6,8 @@ from PyQt5.QtCore import QAbstractTableModel
 class GraModel(QAbstractTableModel):
     def __init__(self, dataProc, dimProc):
         super(GraModel, self).__init__()
-        self.dataProc:callable = dataProc
-        self.dimProc:callable = dimProc
+        self.dataProc: callable = dataProc
+        self.dimProc: callable = dimProc
 
     def rowCount(self, parent):
         return self.dimProc(1)
@@ -29,3 +29,6 @@ class GraModel(QAbstractTableModel):
                 if section == 1:
                     return 'parent'
         return super(GraModel, self).headerData(section, orientation, role)
+
+    def toChange(self):
+        self.layoutChanged().emit()

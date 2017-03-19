@@ -5,7 +5,7 @@ class FrontEnd:
     def __init__(self, dbms, gviz):
         self.dbms: object = dbms
         self.gviz: object = gviz
-        self.graphData:dict = {}
+        self.graphData: dict = {}
         self.columns: int = 2
         self.nodesCount: int = 0
         self.redrawState: bool = True

@@ -1,6 +1,6 @@
 # coding=utf-8
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import pyqtSignal
 from .mainwindow01 import MainWindow
 from .gramodel import GraModel
 
@@ -8,14 +8,19 @@ from .gramodel import GraModel
 class QApp(QApplication):
 
     modelChanged = pyqtSignal()
-    doRedraw = pyqtSignal()
 
     def __init__(self, argv, frontend):
         super(QApp, self).__init__(argv)
         self.frontEnd: object = frontend
         self.initGraphEvent()
+        self.tDataTableModel = GraModel(self.t_dataWidgetData,
+                                        self.t_dataDimension)
+        # self.modelChanged.connect(self.puk)
+        self.modelChanged.connect(lambda:
+                                  self.tDataTableModel.layoutChanged.emit())
+
         self.mainwindow: object = MainWindow()
-        self.doRedraw.emit()
+        self.modelChanged.emit()
 
     # event handlers
     def initGraphEvent(self):
@@ -24,20 +29,16 @@ class QApp(QApplication):
         # self.frontEnd.setDirected(directed)
         # self.frontEnd.setNodesDefaultShape('circle')
         self.frontEnd.loadGraph(True)
-        self.modelChanged.emit()
-        # self.doRedraw.emit()
 
     def addChildNodeEvent(self, parent: int):
         self.frontEnd.addChildNode(parent)
         # emit model changed
         self.modelChanged.emit()
-        self.doRedraw.emit()
 
     def deleteLeafNodeEvent(self, label: int):
         self.frontEnd.deleteLeafNode(label)
         # emit model changed
         self.modelChanged.emit()
-        self.doRedraw.emit()
 
     # service functions for context menu events
     def hasChildren(self, label: int):

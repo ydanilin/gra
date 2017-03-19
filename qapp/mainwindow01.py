@@ -9,9 +9,9 @@ from .gramodel import GraModel
 class MainWindow(QMainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
-        self.app:object = None
-        self.dataView:object = None
-        self.pathView:object = None
+        self.app: object = None
+        self.dataView: object = None
+        self.pathView: object = None
 
         self.app = QCoreApplication.instance()
         self.setWindowTitle('Basic Drawing')
@@ -45,7 +45,7 @@ class graWidget(QGraphicsView):
         self.setScene(GraScene())
         self.setFrameStyle(QFrame.Box | QFrame.Plain)
         self.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Minimum)
-        self.app.doRedraw.connect(self.redraw)
+        self.app.modelChanged.connect(self.redraw)
         # self.scene().drawScene(self.app.sceneWidgetData())
 
     def redraw(self):
@@ -59,16 +59,16 @@ class TDataTableGrid(QTableView):
     def __init__(self, app, parent=None):
         self.app: object = app
         super(TDataTableGrid, self).__init__(parent)
-        model = GraModel(self.app.t_dataWidgetData, self.app.t_dataDimension)
-        self.setModel(model)
+        # model = GraModel(self.app.t_dataWidgetData, self.app.t_dataDimension)
+        self.setModel(self.app.tDataTableModel)
         self.verticalHeader().hide()
         self.resizeColumnsToContents()
         self.resizeRowsToContents()
         self.verticalHeader().setDefaultSectionSize(self.rowHeight(0))
-        self.app.modelChanged.connect(self.update)
+        # self.app.modelChanged.connect(self.update)
 
-    def update(self):
-        self.model().layoutChanged.emit()
+    # def update(self):
+    #     self.model().layoutChanged.emit()
 
 
 class TPathTableGrid(QTableView):
