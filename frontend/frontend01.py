@@ -26,15 +26,15 @@ class FrontEnd:
 
     def loadGraph(self, forceRedraw):
         # DB operations
-        self.graphData['nodes'] = self.dbms.listDataTable()
-        self.nodesCount = len(self.graphData['nodes'])
+        self.graphData = self.dbms.listDataTable()
+        self.nodesCount = len(self.graphData)
         self.tPath = self.dbms.listPathTable()
         self.tPathCount = len(self.tPath)
         # Gviz operations
         if forceRedraw:
-            self.gviz.newGraph(self.graphData['nodes'])
-            self.graphData['boundingBox'] = self.gviz.makeLayout()
-            self.gviz.getGeometry(self.graphData['nodes'])
+            self.gviz.newGraph(self.graphData)
+            self.graphData[0]['boundingBox'] = self.gviz.makeLayout()
+            self.gviz.getGeometry(self.graphData)
         else:
             print('not implemented')
 
@@ -65,7 +65,7 @@ class FrontEnd:
             col = 'node'
         if column == 1:
             col = 'parent'
-        return self.graphData['nodes'][row][col]
+        return self.graphData[row][col]
 
     def t_dataDimension(self, whichDimension):
         output = None

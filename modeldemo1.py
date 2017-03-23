@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import QApplication, QTreeView
 from dbms import DBMS
 from epygraph import Epygraph
 from frontend import FrontEnd
-from models import TreeModel
+from models import TreeModel, TreeViewModel
 
 
 if __name__ == '__main__':
@@ -16,12 +16,15 @@ if __name__ == '__main__':
     frontEnd = FrontEnd(dbms, ep)
     frontEnd.loadGraph(True)
 
-    model = TreeModel(frontEnd.graphData['nodes'])
+    model = TreeModel(frontEnd.graphData)
     model.preorder()
+    model1 = TreeViewModel(model)
 
     app = QApplication(sys.argv)
     view = QTreeView()
-    view.setModel(model)
+    view.setModel(model1)
+    # view.header().setMinimumSectionSize(1)
     view.setWindowTitle("Simple Tree Model")
     view.show()
+    view.expandAll()
     sys.exit(app.exec_())

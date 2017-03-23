@@ -1,2 +1,2 @@
 
-from .treemodel import TreeModel
+from .treemodel import TreeModel, TreeViewModel

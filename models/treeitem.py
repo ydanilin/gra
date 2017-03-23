@@ -5,7 +5,7 @@ class TreeItem:
     def __init__(self, datta, parentItem=None):
         self.parentItem: object = parentItem
         self.childItems: list = []
-        self.itemData: list = datta
+        self.itemData: dict = datta
 
     def appendChild(self, item):
         self.childItems.append(item)
@@ -25,10 +25,13 @@ class TreeItem:
     def columnCount(self):
         return len(self.itemData)
 
-    def datta(self, column):
+    def datta(self, columnKeyList):
         output = None
-        if column < self.columnCount():
-            output = str(self.itemData[column])
+        for columnKey in columnKeyList:
+            if columnKeyList.index(columnKey) == 0:
+                output = self.itemData[columnKey]
+            else:
+                output = output[columnKey]
         return output
 
     def parent(self):

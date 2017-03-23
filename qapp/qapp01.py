@@ -46,7 +46,7 @@ class QApp(QApplication):
 
     # datafeeds for widgets
     def sceneWidgetData(self):
-        return self.frontEnd.graphData['nodes'], self.frontEnd.graphData['boundingBox']
+        return self.frontEnd.graphData, self.frontEnd.graphData[0]['boundingBox']
 
     def t_dataWidgetData(self, row, column):
         return self.frontEnd.t_dataData(row, column)

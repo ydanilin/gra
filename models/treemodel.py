@@ -1,6 +1,7 @@
 # coding=utf-8
-from PyQt5.QtCore import Qt, QVariant
-from PyQt5.QtCore import QAbstractItemModel, QModelIndex
+from PyQt5.QtCore import (Qt, QSize,
+                          QAbstractItemModel, QIdentityProxyModel,
+                          QModelIndex)
 from .treeitem import TreeItem
 
 
@@ -8,11 +9,16 @@ class TreeModel(QAbstractItemModel):
     def __init__(self, datta, parent=None):
         super(TreeModel, self).__init__(parent)
         self.rootItem: object = None
-        rootData = []
-        rootData.append('Label')
+        self.columns: dict = {0: ['node'],
+                              1: ['parent'],
+                              2: ['geometry', 'centerX'],
+                              3: ['geometry', 'centerY']}
+        self.columnsAmt = len(self.columns)
+        # rootData = []
+        # rootData.append('Label')
         # rootData.append('Summary')
-        self.rootItem = TreeItem(rootData)
-        self.setupModelData(datta, self.rootItem)
+        # self.rootItem = TreeItem(rootData)
+        self.setupModelData(datta)
 
     def index(self, row, column, parent):
         if not self.hasIndex(row, column, parent):
@@ -46,41 +52,47 @@ class TreeModel(QAbstractItemModel):
             parentItem = parent.internalPointer()
         return parentItem.childCount()
 
-    def columnCount(self, parent):
-        if parent.isValid():
-            return parent.internalPointer().columnCount()
-        else:
-            return self.rootItem.columnCount()
+    def columnCount(self, parent=None):
+        # if parent.isValid():
+        #     return parent.internalPointer().columnCount()
+        # else:
+        #     return self.rootItem.columnCount()
+        return self.columnsAmt
 
-    def data(self, index, role):
+    def data(self, index, role=None):
         if not index.isValid():
             return None
         if role != Qt.DisplayRole:
             return None
         item = index.internalPointer()
-        return item.datta(index.column())
+        return item.datta(self.columns[index.column()])
 
     def flags(self, index):
         if not index.isValid():
             return Qt.NoItemFlags
         return super(TreeModel, self).flags(index)
 
-    def headerData(self, section, orientation, role):
+    def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
-            return self.rootItem.datta(section)
+            return self.columns[section][-1]
         return None
 
-    def setupModelData(self, graList, rootParent):
+    def setupModelData(self, graData):
         appearedNodes = {}
-        for item in graList:
+        for item in graData:
             node = item['node']
             parent = item['parent']
+            # columnData = [str(node)]
+            columnData = item
             if node != parent:
-                columnData = [str(node)]
-                appearedNodes[node] = TreeItem(columnData, appearedNodes[parent])
-                appearedNodes[parent].appendChild(appearedNodes[node])
+                parentNode = appearedNodes[parent]
+                # record node itself
+                appearedNodes[node] = TreeItem(columnData, parentNode)
+                # and add it to it's parent children
+                parentNode.appendChild(appearedNodes[node])
             else:
-                appearedNodes[node] = rootParent
+                appearedNodes[node] = TreeItem(columnData, None)
+                self.rootItem = appearedNodes[node]
 
     def preorder(self):
         cNodeIndex = self.createIndex(0, 0, self.rootItem)
@@ -97,3 +109,40 @@ class TreeModel(QAbstractItemModel):
                 row = cNodeIndex.row()
                 column = cNodeIndex.column()
                 cNodeIndex = cNodeIndex.sibling(row + 1, column)
+
+
+class TreeViewModel(QIdentityProxyModel):
+    def __init__(self, sourceModel, parent=None):
+        super(TreeViewModel, self).__init__(parent)
+        self.setSourceModel(sourceModel)
+        self.nameMapping = {'node': 'Label',
+                            'parent': 'Parent label',
+                            'centerX': 'Center X',
+                            'centerY': 'Center Y'}
+
+    def headerData(self, section, orientation, role=None):
+        if orientation == Qt.Horizontal and (role == Qt.DisplayRole or
+                                             role == Qt.SizeHintRole):
+            modelHeader = self.sourceModel().columns[section][-1]
+            mappedName = modelHeader
+            if modelHeader in self.nameMapping.keys():
+                mappedName = self.nameMapping[modelHeader]
+            if role == Qt.DisplayRole:
+                return mappedName
+            # if role == Qt.SizeHintRole:
+            #     return QSize(300, 30)
+        return None
+
+    def data(self, index, role=None):
+        if role == Qt.DisplayRole:
+            output = self.sourceModel().data(index, role)
+            if index.column() in [2, 3]:
+                output = str(round(output, 1))
+            return output
+        if role == Qt.TextAlignmentRole:
+            if index.column() in [1, 2, 3]:
+                return Qt.AlignCenter
+        else:
+            return None
+
+# http://stackoverflow.com/questions/32822442/how-to-align-text-of-table-widget-in-qt
