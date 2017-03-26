@@ -12,7 +12,7 @@ class TreeModel(QAbstractItemModel):
         self.columns: dict = {0: ['node'],
                               1: ['parent'],
                               2: ['geometry', 'centerX'],
-                              3: ['geometry', 'centerY']}
+                              3: ['userData']}
         self.columnsAmt = len(self.columns)
         # rootData = []
         # rootData.append('Label')
@@ -118,7 +118,7 @@ class TreeViewModel(QIdentityProxyModel):
         self.nameMapping = {'node': 'Label',
                             'parent': 'Parent label',
                             'centerX': 'Center X',
-                            'centerY': 'Center Y'}
+                            'userData': 'Description'}
 
     def headerData(self, section, orientation, role=None):
         if orientation == Qt.Horizontal and (role == Qt.DisplayRole or
@@ -134,15 +134,28 @@ class TreeViewModel(QIdentityProxyModel):
         return None
 
     def data(self, index, role=None):
-        if role == Qt.DisplayRole:
+        # "||" = logical OR in C++
+        if role == Qt.DisplayRole or role == Qt.EditRole:
             output = self.sourceModel().data(index, role)
-            if index.column() in [2, 3]:
+            if index.column() in [2]:
                 output = str(round(output, 1))
             return output
         if role == Qt.TextAlignmentRole:
-            if index.column() in [1, 2, 3]:
+            if index.column() in [1, 2]:
                 return Qt.AlignCenter
         else:
             return None
+
+    def setData(self, index, value, role=None):
+        if index.isValid() and role == Qt.EditRole:
+            puk = 1
+
+    def flags(self, index):
+        if not index.isValid():
+            return Qt.NoItemFlags
+        output = super(TreeViewModel, self).flags(index)
+        if index.column() == 3:
+            output = output | Qt.ItemIsEditable  # "|" = bitwise OR Python
+        return output                            # "|" = bitwise OR C++
 
 # http://stackoverflow.com/questions/32822442/how-to-align-text-of-table-widget-in-qt

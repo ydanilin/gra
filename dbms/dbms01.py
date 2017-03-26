@@ -2,7 +2,7 @@
 from pprint import pprint
 from sqlalchemy.sql import text
 from sqlalchemy import (create_engine, MetaData, Table, Column, Integer,
-                        UniqueConstraint, select, update, and_, or_, column,
+                        String, select, update, and_, or_, column,
                         literal_column, union)
 
 
@@ -21,7 +21,8 @@ class DBMS:
 
         self.t_data = Table('t_data', self.metadata,
                             Column('node', Integer(), primary_key=True),
-                            Column('parent', Integer(), nullable=False)
+                            Column('parent', Integer(), nullable=False),
+                            Column('user_data', String(), default='')
                             )
         self.t_path = Table('t_path', self.metadata,
                             Column('id_', Integer(), primary_key=True),
@@ -38,10 +39,13 @@ class DBMS:
     def listDataTable(self):
         nodes = []
         res = self.connection.execute(select([self.t_data.c.node,
-                                              self.t_data.c.parent]
+                                              self.t_data.c.parent,
+                                              self.t_data.c.user_data]
                                              ).order_by(self.t_data.c.node)
                                       )
-        nodes = [{'node': l[0], 'parent': l[1]} for l in res]
+        nodes = [{'node': l[0],
+                  'parent': l[1],
+                  'userData': l[2]} for l in res]
         return nodes
 
     def listPathTable(self):
