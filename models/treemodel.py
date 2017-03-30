@@ -1,7 +1,7 @@
 # coding=utf-8
 from PyQt5.QtCore import (Qt, QSize,
                           QAbstractItemModel, QIdentityProxyModel,
-                          QModelIndex)
+                          QModelIndex, QAbstractProxyModel)
 from .treeitem import TreeItem
 
 
@@ -11,8 +11,11 @@ class TreeModel(QAbstractItemModel):
         self.rootItem: object = None
         self.columns: dict = {0: ['node'],
                               1: ['parent'],
-                              2: ['geometry', 'centerX'],
-                              3: ['userData']}
+                              2: ['geometry'],
+                              3: ['edgeGeometry'],
+                              4: ['userData'],
+                              5: ['geometry', 'centerX'],
+                              6: ['geometry', 'centerY']}
         self.columnsAmt = len(self.columns)
         # rootData = []
         # rootData.append('Label')
@@ -20,7 +23,7 @@ class TreeModel(QAbstractItemModel):
         # self.rootItem = TreeItem(rootData)
         self.setupModelData(datta)
 
-    def index(self, row, column, parent):
+    def index(self, row, column, parent=None, *args, **kwargs):
         if not self.hasIndex(row, column, parent):
             return QModelIndex()
         parentItem: object = None
@@ -43,7 +46,7 @@ class TreeModel(QAbstractItemModel):
             return QModelIndex()
         return self.createIndex(parentItem.row(), 0, parentItem)
 
-    def rowCount(self, parent):
+    def rowCount(self, parent=None, *args, **kwargs):
         if parent.column() > 0:
             return 0
         if not parent.isValid():
@@ -52,7 +55,7 @@ class TreeModel(QAbstractItemModel):
             parentItem = parent.internalPointer()
         return parentItem.childCount()
 
-    def columnCount(self, parent=None):
+    def columnCount(self, parent=None, *args, **kwargs):
         # if parent.isValid():
         #     return parent.internalPointer().columnCount()
         # else:
@@ -159,3 +162,46 @@ class TreeViewModel(QIdentityProxyModel):
         return output                            # "|" = bitwise OR C++
 
 # http://stackoverflow.com/questions/32822442/how-to-align-text-of-table-widget-in-qt
+
+
+class ExpModel(QAbstractProxyModel):
+    def __init__(self, sourceModel, parent=None):
+        super(ExpModel, self).__init__(parent)
+        self.setSourceModel(sourceModel)
+
+    def mapFromSource(self, index):
+        return self.createIndex(index.row(), index.column(), index.internalPointer())
+
+    def mapToSource(self, index):
+        return self.sourceModel().createIndex(index.row(), index.column(), index.internalPointer())
+
+    def rowCount(self, parent=None, *args, **kwargs):
+        return self.sourceModel().rowCount(parent)
+
+    def columnCount(self, parent=None, *args, **kwargs):
+        return self.sourceModel().columnCount(parent)
+
+    def index(self, row, column, parent=None, *args, **kwargs):
+        sourceParent = self.mapToSource(parent)
+        sourceIndex = self.sourceModel().index(row, column, sourceParent)
+        return self.mapFromSource(sourceIndex)
+
+    def headerData(self, section, orientation, role=None):
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return 'Puk'
+        return None
+
+    def parent(self, index=None):
+        sourceIndex = self.mapToSource(index)
+        sourceParent = sourceIndex.parent()
+        return self.mapFromSource(sourceParent)
+
+    # def data(self, index, role=None):
+    #      return self.sourceModel().data(index, role)
+
+    # def flags(self, index):
+    #     if not index.isValid():
+    #         return Qt.NoItemFlags
+    #     return super(ExpModel, self).flags(index)
+
+# http://stackoverflow.com/questions/23896182/sourcemodel-createindex-in-qabstractproxymodel-sub-class?rq=1
