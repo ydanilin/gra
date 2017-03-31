@@ -47,8 +47,8 @@ class TreeModel(QAbstractItemModel):
         return self.createIndex(parentItem.row(), 0, parentItem)
 
     def rowCount(self, parent=None, *args, **kwargs):
-        if parent.column() > 0:
-            return 0
+        # if parent.column() > 0:
+        #     return 0
         if not parent.isValid():
             parentItem = self.rootItem
         else:
@@ -85,7 +85,6 @@ class TreeModel(QAbstractItemModel):
         for item in graData:
             node = item['node']
             parent = item['parent']
-            # columnData = [str(node)]
             columnData = item
             if node != parent:
                 parentNode = appearedNodes[parent]
@@ -168,18 +167,25 @@ class ExpModel(QAbstractProxyModel):
     def __init__(self, sourceModel, parent=None):
         super(ExpModel, self).__init__(parent)
         self.setSourceModel(sourceModel)
+        self.sourceIndexes: list = [0, 4, 6]
+        self.columnsAmt: int = len(self.sourceIndexes)
 
     def mapFromSource(self, index):
-        return self.createIndex(index.row(), index.column(), index.internalPointer())
+        col = index.column()
+        if col in self.sourceIndexes:
+            return self.createIndex(index.row(), self.sourceIndexes.index(col), index.internalPointer())
+        else:
+            return self.createIndex(index.row(), col, index.internalPointer())
 
     def mapToSource(self, index):
-        return self.sourceModel().createIndex(index.row(), index.column(), index.internalPointer())
+        col = self.sourceIndexes[index.column()]
+        return self.sourceModel().createIndex(index.row(), col, index.internalPointer())
 
     def rowCount(self, parent=None, *args, **kwargs):
         return self.sourceModel().rowCount(parent)
 
     def columnCount(self, parent=None, *args, **kwargs):
-        return self.sourceModel().columnCount(parent)
+        return self.columnsAmt
 
     def index(self, row, column, parent=None, *args, **kwargs):
         sourceParent = self.mapToSource(parent)
@@ -195,9 +201,6 @@ class ExpModel(QAbstractProxyModel):
         sourceIndex = self.mapToSource(index)
         sourceParent = sourceIndex.parent()
         return self.mapFromSource(sourceParent)
-
-    # def data(self, index, role=None):
-    #      return self.sourceModel().data(index, role)
 
     # def flags(self, index):
     #     if not index.isValid():
