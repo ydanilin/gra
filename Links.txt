@@ -17,3 +17,5 @@ http://doc.qt.io/qt-5/examples-graphicsview.html
 Editable Tree Model
 http://doc.qt.io/qt-5/qtwidgets-itemviews-editabletreemodel-example.html
 
+Window and Dialog Widgets
+http://doc.qt.io/qt-5/application-windows.html
